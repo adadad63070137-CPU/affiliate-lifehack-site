@@ -23,7 +23,9 @@ jobs:
         with:
           node-version: "22"
 
-      - run: npm install -g @anthropic-ai/claude-code
+      # 2.1.257等の新しいバージョンではCLAUDE_CODE_OAUTH_TOKENが
+      # "401 Invalid bearer token"になる問題を確認済みのため、動作確認済みのバージョンに固定する。
+      - run: npm install -g @anthropic-ai/claude-code@2.1.145
 
       - name: Generate article
         env:
