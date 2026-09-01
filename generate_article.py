@@ -24,12 +24,14 @@ ARTICLES_DIR = ROOT / "articles"
 SITE_INDEX = ROOT / "index.html"
 SITEMAP = ROOT / "sitemap.xml"
 
+# GitHub Actionsでは未設定のvars.*は空文字として渡ってくる(キー自体は存在する)ため、
+# os.environ.get(key, default)だと空文字がそのまま使われてしまう。`or`で空文字もデフォルトに倒す。
 # "sonnet"/"opus" のようなエイリアスも指定可能。フルの型番だと将来的に古くなるためエイリアス推奨。
-MODEL = os.environ.get("CLAUDE_MODEL", "sonnet")
+MODEL = os.environ.get("CLAUDE_MODEL") or "sonnet"
 AMAZON_ASSOC_TAG = os.environ.get("AMAZON_ASSOC_TAG", "").strip()
 RAKUTEN_AFFILIATE_ID = os.environ.get("RAKUTEN_AFFILIATE_ID", "").strip()
-SITE_URL = os.environ.get("SITE_URL", "https://example.github.io").rstrip("/")
-SITE_NAME = os.environ.get("SITE_NAME", "ひとり暮らし家電・便利グッズ比較ラボ")
+SITE_URL = (os.environ.get("SITE_URL") or "https://example.github.io").rstrip("/")
+SITE_NAME = os.environ.get("SITE_NAME") or "ひとり暮らし家電・便利グッズ比較ラボ"
 
 # 景品表示法・薬機法まわりで自動生成コンテンツに残すと危険な表現。
 # これらのフレーズを含む「文」単位で丸ごと削除し、公開自体は止めない(フル自動運用のための安全弁)。
