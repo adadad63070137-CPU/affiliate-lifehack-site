@@ -44,14 +44,14 @@ Claude Codeはアカウント作成やパスワード入力を代行できない
 4. リポジトリの Settings → Pages で「Deploy from a branch」→ `main` / `/(root)` を選択して保存
    → `https://<your-account>.github.io/affiliate-lifehack-site/` で公開されます
 
-### 2. Claude Codeのサブスクリプションで使う長期トークンを発行する(APIの従量課金は使いません)
-1. ターミナルで `claude setup-token` を実行し、ブラウザでの認証を完了する
-2. 表示された `sk-ant-oat01-...` から始まるトークンをコピーする(**チャットや人に見せず、自分だけが使う**)
+### 2. Anthropic API キーを発行する
+1. https://console.anthropic.com でAPIキーを発行(Claude Codeのサブスクとは別に、従量課金のAPIキーが必要です)
+2. https://console.anthropic.com/settings/billing でクレジットを購入(少額でOK。月あたりの想定コストは後述)
 3. リポジトリの Settings → Secrets and variables → Actions → **Secrets** タブで
-   `CLAUDE_CODE_OAUTH_TOKEN` という名前で追加(値はここにしか保存されず、あなた以外は見られません)
+   `ANTHROPIC_API_KEY` を追加(値はここにしか保存されず、あなた以外は見られません。**チャットには絶対に貼らないでください**)
 
-このトークンはAnthropic APIの従量課金ではなく、あなたのClaude Code契約(サブスクリプション)の利用枠を使います。
-そのため追加の課金は基本的に発生しませんが、契約プランの利用上限(週次メッセージ数など)を消費する点は理解しておいてください。
+(補足: Claude Codeのサブスクリプション認証(`claude setup-token`)でGitHub Actionsから呼び出す方法も試しましたが、
+発行元のMac以外から使うと `401 Invalid bearer token` で拒否されることを確認したため、クラウドでの完全自動化にはAPIキー課金方式を使っています。)
 
 ### 3. サイト設定を Variables に登録
 同じ画面の **Variables** タブで以下を追加(値は任意):
@@ -79,8 +79,8 @@ Actionsタブ → 左のワークフロー「Generate and publish article」→ 
 ## ローカルでのテスト実行
 ```bash
 cd ~/affiliate-lifehack-site
-# 未設定なら: claude setup-token でトークンを発行してから
-export CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-xxxx
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=sk-ant-xxxx
 python3 generate_article.py
 open index.html
 ```

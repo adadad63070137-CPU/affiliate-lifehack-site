@@ -12,11 +12,12 @@ import html
 import json
 import os
 import re
-import subprocess
 import sys
 from datetime import date
 from pathlib import Path
 from urllib.parse import quote_plus
+
+from anthropic import Anthropic
 
 ROOT = Path(__file__).parent
 KEYWORDS_CSV = ROOT / "data" / "keywords.csv"
@@ -26,8 +27,7 @@ SITEMAP = ROOT / "sitemap.xml"
 
 # GitHub Actionsでは未設定のvars.*は空文字として渡ってくる(キー自体は存在する)ため、
 # os.environ.get(key, default)だと空文字がそのまま使われてしまう。`or`で空文字もデフォルトに倒す。
-# "sonnet"/"opus" のようなエイリアスも指定可能。フルの型番だと将来的に古くなるためエイリアス推奨。
-MODEL = os.environ.get("CLAUDE_MODEL") or "sonnet"
+MODEL = os.environ.get("CLAUDE_MODEL") or "claude-sonnet-5"
 AMAZON_ASSOC_TAG = os.environ.get("AMAZON_ASSOC_TAG", "").strip()
 RAKUTEN_AFFILIATE_ID = os.environ.get("RAKUTEN_AFFILIATE_ID", "").strip()
 SITE_URL = (os.environ.get("SITE_URL") or "https://example.github.io").rstrip("/")
@@ -121,55 +121,22 @@ def sanitize_article(article: dict) -> dict:
     return article
 
 
-ARTICLE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "title": {"type": "string"},
-        "meta_description": {"type": "string"},
-        "intro": {"type": "string"},
-        "sections": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {"heading": {"type": "string"}, "body": {"type": "string"}},
-                "required": ["heading", "body"],
-            },
-        },
-        "faq": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {"q": {"type": "string"}, "a": {"type": "string"}},
-                "required": ["q", "a"],
-            },
-        },
-        "conclusion": {"type": "string"},
-    },
-    "required": ["title", "meta_description", "intro", "sections", "faq", "conclusion"],
-}
-
-
 def call_claude(keyword: str, category: str) -> dict:
-    """`claude -p` (Claude Codeのサブスクリプション認証) 経由で記事を生成する。
-    ANTHROPIC_API_KEYの従量課金は使わず、CLAUDE_CODE_OAUTH_TOKENでの認証を前提とする。
-    """
-    prompt = USER_PROMPT_TEMPLATE.format(keyword=keyword, category=category)
-    cmd = [
-        "claude", "-p", prompt,
-        "--append-system-prompt", SYSTEM_PROMPT,
-        "--json-schema", json.dumps(ARTICLE_SCHEMA),
-        "--output-format", "json",
-        "--tools", "",
-        "--no-session-persistence",
-        "--model", MODEL,
-    ]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-    if proc.returncode != 0:
-        raise RuntimeError(f"claude CLI failed (exit {proc.returncode}): {proc.stderr.strip() or proc.stdout.strip()}")
-    envelope = json.loads(proc.stdout)
-    if envelope.get("is_error"):
-        raise RuntimeError(f"claude CLI returned an error: {envelope}")
-    return envelope["structured_output"]
+    client = Anthropic()  # reads ANTHROPIC_API_KEY from env
+    resp = client.messages.create(
+        model=MODEL,
+        max_tokens=2000,
+        system=SYSTEM_PROMPT,
+        messages=[
+            {
+                "role": "user",
+                "content": USER_PROMPT_TEMPLATE.format(keyword=keyword, category=category),
+            }
+        ],
+    )
+    raw = resp.content[0].text.strip()
+    raw = re.sub(r"^```json|```$", "", raw, flags=re.MULTILINE).strip()
+    return json.loads(raw)
 
 
 def affiliate_box_html(keyword: str) -> str:
