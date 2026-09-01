@@ -1,0 +1,12 @@
+body { font-family: -apple-system, "Hiragino Sans", sans-serif; max-width: 720px; margin: 0 auto; padding: 0 16px 40px; line-height: 1.8; color: #222; }
+header { padding: 16px 0; font-weight: bold; font-size: 1.2em; }
+header a { color: inherit; text-decoration: none; }
+.disclosure { background: #f4f4f4; border-left: 4px solid #999; padding: 10px 14px; font-size: 0.85em; color: #555; margin-bottom: 20px; }
+.affiliate-box { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+.aff-btn { display: inline-block; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; color: #fff; }
+.aff-btn.amazon { background: #ff9900; }
+.aff-btn.rakuten { background: #bf0000; }
+.aff-btn.disabled { background: #aaa; }
+.date { color: #888; font-size: 0.85em; }
+ul { padding-left: 1.2em; }
+footer { margin-top: 40px; color: #888; font-size: 0.85em; }
