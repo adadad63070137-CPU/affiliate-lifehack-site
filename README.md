@@ -59,12 +59,10 @@ Claude Codeはアカウント作成やパスワード入力を代行できない
 - `SITE_NAME` = `ひとり暮らし家電・便利グッズ比較ラボ`
 - `CLAUDE_MODEL` = `claude-sonnet-5`(未設定でもこの値がデフォルトで使われます)
 
-### 4. アフィリエイトプログラムに提携申請する(未提携とのことなので)
-- **Amazonアソシエイト**: https://affiliate.amazon.co.jp/ から申請。審査には実際に動いているサイト(記事が数本ある状態)が必要なため、先に1〜2週間分の記事をActionsで生成してから申請するとスムーズです。
-- **楽天アフィリエイト**: https://affiliate.rakuten.co.jp/ から登録(こちらは即日〜数日で使えることが多いです)
-- 承認されたら発行されたトラッキングID/アフィリエイトIDを Variables に追加:
-  - `AMAZON_ASSOC_TAG` = 発行された Associate Tag(例: `yourid-22`)
-  - `RAKUTEN_AFFILIATE_ID` = 発行されたアフィリエイトID
+### 4. アフィリエイトプログラムに提携申請する
+- **Amazonアソシエイト**: https://affiliate.amazon.co.jp/ から申請。承認済み(`AMAZON_ASSOC_TAG`をVariablesに設定済み)
+- **楽天アフィリエイト**: https://affiliate.rakuten.co.jp/ から登録可能。申請したが承認メールを受信できなかったため、現状は保留中(**当面はAmazonのみで運用**)。`RAKUTEN_AFFILIATE_ID`が未設定の間は、記事に楽天リンクは表示されない(コード側で自動的に非表示になる)。迷惑メールフォルダを確認するか、再申請すれば復旧できるので、対応したくなったらいつでも:
+  - Variablesに `RAKUTEN_AFFILIATE_ID` を追加するだけで、次回生成分から自動的に楽天リンクも表示されるようになる
 - 未設定の間はリンクが「(提携未設定)」の非収益リンクとして表示されるだけで、サイトは問題なく動きます。
 
 ### 5. 動作確認
