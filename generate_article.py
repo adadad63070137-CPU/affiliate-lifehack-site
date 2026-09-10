@@ -157,11 +157,8 @@ def affiliate_box_html(keyword: str) -> str:
             f'<a class="aff-btn rakuten" href="https://search.rakuten.co.jp/search/mall/{q}/?affiliateId={RAKUTEN_AFFILIATE_ID}" '
             f'rel="nofollow sponsored" target="_blank">楽天市場で探す</a>'
         )
-    else:
-        links.append(
-            f'<a class="aff-btn rakuten disabled" href="https://search.rakuten.co.jp/search/mall/{q}/" '
-            f'rel="nofollow" target="_blank">楽天市場で探す(提携未設定)</a>'
-        )
+    # 楽天は現状未提携のため、提携するまでは中途半端な「提携未設定」リンクは出さない。
+    # RAKUTEN_AFFILIATE_IDが設定されればそのまま自動で表示される。
     return '<div class="affiliate-box">' + "".join(links) + "</div>"
 
 
