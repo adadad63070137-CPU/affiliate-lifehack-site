@@ -169,6 +169,13 @@ ARTICLE_TEMPLATE = """<!doctype html>
 <title>{title} | {site_name}</title>
 <meta name="description" content="{meta_description}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{meta_description}">
+<meta property="og:url" content="{page_url}">
+<meta property="og:image" content="{site_url}/ogp.png">
+<meta property="og:site_name" content="{site_name}">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -207,6 +214,7 @@ def render_article(article: dict, keyword: str) -> str:
         for qa in article.get("faq", [])
     )
     box = affiliate_box_html(keyword)
+    slug = slugify(keyword)
     return ARTICLE_TEMPLATE.format(
         title=html.escape(article["title"]),
         meta_description=html.escape(article["meta_description"]),
@@ -218,6 +226,8 @@ def render_article(article: dict, keyword: str) -> str:
         affiliate_box_bottom=box,
         site_name=html.escape(SITE_NAME),
         pub_date=date.today().isoformat(),
+        page_url=f"{SITE_URL}/articles/{slug}.html",
+        site_url=SITE_URL,
     )
 
 
@@ -230,11 +240,20 @@ def rebuild_index():
         title = m.group(1) if m else f.stem
         items.append(f'<li><a href="articles/{f.name}">{title}</a></li>')
     body = "\n".join(items) if items else "<li>準備中です</li>"
+    site_description = "一人暮らし・新生活向けの家電や生活便利グッズの選び方を紹介する比較サイトです。"
     SITE_INDEX.write_text(
         f"""<!doctype html>
 <html lang="ja">
 <head><meta charset="utf-8"><title>{SITE_NAME}</title>
+<meta name="description" content="{site_description}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{SITE_NAME}">
+<meta property="og:description" content="{site_description}">
+<meta property="og:url" content="{SITE_URL}/">
+<meta property="og:image" content="{SITE_URL}/ogp.png">
+<meta property="og:site_name" content="{SITE_NAME}">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="style.css"></head>
 <body>
 <header>{SITE_NAME}</header>
