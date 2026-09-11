@@ -36,6 +36,12 @@ SITE_URL = (os.environ.get("SITE_URL") or "https://example.github.io").rstrip("/
 INDEXNOW_KEY = os.environ.get("INDEXNOW_KEY", "62be1f48a5cf04b55d880994d6f8c37a").strip()
 SITE_NAME = os.environ.get("SITE_NAME") or "ひとり暮らし家電・便利グッズ比較ラボ"
 
+# X(Twitter)自動投稿用。4つとも設定されている場合のみ投稿する(未設定なら黙ってスキップ)。
+X_API_KEY = os.environ.get("X_API_KEY", "").strip()
+X_API_SECRET = os.environ.get("X_API_SECRET", "").strip()
+X_ACCESS_TOKEN = os.environ.get("X_ACCESS_TOKEN", "").strip()
+X_ACCESS_TOKEN_SECRET = os.environ.get("X_ACCESS_TOKEN_SECRET", "").strip()
+
 # 景品表示法・薬機法まわりで自動生成コンテンツに残すと危険な表現。
 # これらのフレーズを含む「文」単位で丸ごと削除し、公開自体は止めない(フル自動運用のための安全弁)。
 BANNED_PHRASES = [
@@ -321,7 +327,31 @@ def main():
 
     new_article_url = f"{SITE_URL}/articles/{slug}.html"
     notify_indexnow([new_article_url, f"{SITE_URL}/", f"{SITE_URL}/sitemap.xml"])
+    post_to_x(article["title"], new_article_url)
     return 0
+
+
+def post_to_x(title: str, url: str) -> None:
+    """新着記事をX(Twitter)に投稿する。認証情報が未設定なら何もしない(非致命的)。"""
+    if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET]):
+        print("X credentials not set; skipping auto-post.")
+        return
+    try:
+        import tweepy
+
+        client = tweepy.Client(
+            consumer_key=X_API_KEY,
+            consumer_secret=X_API_SECRET,
+            access_token=X_ACCESS_TOKEN,
+            access_token_secret=X_ACCESS_TOKEN_SECRET,
+        )
+        # 短縮URLはX側で23文字換算になるため、タイトルは余裕を持って60文字までに切る。
+        short_title = title if len(title) <= 60 else title[:59] + "…"
+        text = f"{short_title}\n\n{url}"
+        client.create_tweet(text=text)
+        print("Posted to X.")
+    except Exception as e:
+        print(f"X post failed (non-fatal): {e}", file=sys.stderr)
 
 
 def notify_indexnow(urls: list[str]) -> None:
