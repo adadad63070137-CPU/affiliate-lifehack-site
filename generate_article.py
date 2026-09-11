@@ -13,9 +13,10 @@ import json
 import os
 import re
 import sys
+import urllib.request
 from datetime import date
 from pathlib import Path
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
 
 from anthropic import Anthropic
 
@@ -31,6 +32,8 @@ MODEL = os.environ.get("CLAUDE_MODEL") or "claude-sonnet-5"
 AMAZON_ASSOC_TAG = os.environ.get("AMAZON_ASSOC_TAG", "").strip()
 RAKUTEN_AFFILIATE_ID = os.environ.get("RAKUTEN_AFFILIATE_ID", "").strip()
 SITE_URL = (os.environ.get("SITE_URL") or "https://example.github.io").rstrip("/")
+# Bing/Yahoo!向けの更新通知(IndexNow)用キー。ルート直下の "<key>.txt" にも同じ値を置く。
+INDEXNOW_KEY = os.environ.get("INDEXNOW_KEY", "62be1f48a5cf04b55d880994d6f8c37a").strip()
 SITE_NAME = os.environ.get("SITE_NAME") or "ひとり暮らし家電・便利グッズ比較ラボ"
 
 # 景品表示法・薬機法まわりで自動生成コンテンツに残すと危険な表現。
@@ -315,7 +318,34 @@ def main():
     rebuild_index()
     rebuild_sitemap()
     print(f"Published: {out_path}")
+
+    new_article_url = f"{SITE_URL}/articles/{slug}.html"
+    notify_indexnow([new_article_url, f"{SITE_URL}/", f"{SITE_URL}/sitemap.xml"])
     return 0
+
+
+def notify_indexnow(urls: list[str]) -> None:
+    """Bing/Yahoo!等のIndexNow対応検索エンジンに更新を通知する(Googleは非対応)。
+    失敗しても記事公開自体は止めない。
+    """
+    host = urlparse(SITE_URL).netloc
+    payload = json.dumps({
+        "host": host,
+        "key": INDEXNOW_KEY,
+        "keyLocation": f"{SITE_URL}/{INDEXNOW_KEY}.txt",
+        "urlList": urls,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.indexnow.org/indexnow",
+        data=payload,
+        headers={"Content-Type": "application/json; charset=utf-8"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            print(f"IndexNow notified: HTTP {resp.status}")
+    except Exception as e:
+        print(f"IndexNow notification failed (non-fatal): {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
