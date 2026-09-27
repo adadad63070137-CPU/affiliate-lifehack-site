@@ -427,3 +427,124 @@ class EndCard(El):
                                 radius=44, fill=with_alpha(PAL["red"], a))
             d.text((bx, by), self.cta, font=fw, fill=with_alpha(PAL["white"], a), anchor="mm")
         fr.comp(L)
+
+
+class PyramidTier(El):
+    """身分ピラミッドの1段（i=0 が頂点）。段ごとに出す"""
+
+    def __init__(self, i, n, name, desc, col, top=120, height=720, **kw):
+        super().__init__(**kw)
+        self.i, self.n, self.name, self.desc, self.col = i, n, name, desc, col
+        self.top, self.height = top, height
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        k = ease_back(lt / 0.35)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        th = self.height / self.n
+        wid = lambda y: 140 + (y - self.top) / self.height * 820
+        y0 = self.top + self.i * th + 6
+        y1 = self.top + (self.i + 1) * th - 6
+        dy = (1 - clamp(k)) * 50
+        cx = W / 2
+        pts = [(cx - wid(y0) / 2, STAGE_Y + y0 + dy), (cx + wid(y0) / 2, STAGE_Y + y0 + dy),
+               (cx + wid(y1) / 2, STAGE_Y + y1 + dy), (cx - wid(y1) / 2, STAGE_Y + y1 + dy)]
+        d.polygon(pts, fill=with_alpha(self.col, a), outline=with_alpha(PAL["white"], a), width=5)
+        my = STAGE_Y + (y0 + y1) / 2 + dy
+        size = 52 if self.i else 40
+        d.text((cx, my - 22), self.name, font=font("black", size), fill=with_alpha(PAL["white"], a), anchor="mm",
+               stroke_width=5, stroke_fill=with_alpha(PAL["ink"], a))
+        d.text((cx, my + 30), self.desc, font=font("bold", 32 if self.i else 26),
+               fill=with_alpha(PAL["white"], a), anchor="mm", stroke_width=4, stroke_fill=with_alpha(PAL["ink"], a))
+        fr.comp(L)
+
+
+class Step(El):
+    """民主化の階段の1段（i=0 が一番下）"""
+
+    def __init__(self, i, year, name, desc, col=PAL["teal"], n=4, **kw):
+        super().__init__(**kw)
+        self.i, self.year, self.name, self.desc, self.col, self.n = i, year, name, desc, col, n
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        k = ease_back(lt / 0.35)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        w, h = 660, 170
+        x0 = 40 + self.i * 110 - (1 - clamp(k)) * 60
+        y1 = STAGE_Y + 950 - self.i * 200
+        y0 = y1 - h
+        d.rounded_rectangle([x0 + 6, y0 + 8, x0 + w + 6, y1 + 8], radius=18, fill=(0, 0, 0, int(50 * a)))
+        d.rounded_rectangle([x0, y0, x0 + w, y1], radius=18, fill=with_alpha(PAL["white"], a),
+                            outline=with_alpha(self.col, a), width=6)
+        d.rounded_rectangle([x0, y0, x0 + 170, y1], radius=18, fill=with_alpha(self.col, a))
+        d.rectangle([x0 + 150, y0, x0 + 170, y1], fill=with_alpha(self.col, a))
+        d.text((x0 + 85, (y0 + y1) / 2), self.year, font=font("black", 40), fill=with_alpha(PAL["white"], a),
+               anchor="mm")
+        d.text((x0 + 195, y0 + 50), self.name, font=font("black", 50), fill=with_alpha(PAL["ink"], a), anchor="lm")
+        segs = parse_markup(self.desc)
+        x = x0 + 197
+        fb = font("bold", 32)
+        for s, em in segs:
+            d.text((x, y0 + 118), s, font=fb, fill=with_alpha(PAL["red"] if em else PAL["dim"], a), anchor="lm")
+            x += text_w(s, fb)
+        fr.comp(L)
+
+
+class Phalanx(El):
+    """重装歩兵の密集隊形（丸盾と槍が横から進む）"""
+    sfx = "whoosh"
+
+    def __init__(self, y=520, **kw):
+        super().__init__(**kw)
+        self.y = y
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        k = ease_out(lt / 1.0)
+        base_x = -500 + k * 560
+        for row in range(3):
+            for col in range(7):
+                x = base_x + col * 130 + row * 40
+                y = STAGE_Y + self.y + row * 95 - 60
+                if not -80 < x < W + 80:
+                    continue
+                d.line([(x + 10, y - 150), (x + 20, y + 60)], fill=with_alpha(PAL["coast"], a), width=7)
+                d.polygon([(x + 8, y - 170), (x + 18, y - 150), (x + 2, y - 150)], fill=with_alpha(PAL["dim"], a))
+                d.ellipse([x - 55, y - 55, x + 55, y + 55], fill=with_alpha(PAL["gold"], a),
+                          outline=with_alpha(PAL["ink"], a), width=6)
+                d.ellipse([x - 22, y - 22, x + 22, y + 22], fill=with_alpha(PAL["red"], a))
+        la = a * clamp((lt - 0.6) / 0.3)
+        _label(d, W / 2, STAGE_Y + 110, "重装歩兵の密集隊形", font("black", 56), PAL["ink"], la, "mm", 7)
+        _label(d, W / 2, STAGE_Y + 175, "（ファランクス）", font("bold", 38), PAL["ink"], la, "mm", 5)
+        fr.comp(L)
+
+
+class Ostracon(El):
+    """陶片追放の陶片（実在するテミストクレスの陶片がモチーフ）"""
+
+    def __init__(self, x, y, name="ΘΕΜΙΣΤΟΚΛΗΣ", caption="↑「テミストクレス」と書かれた実物がモデル", **kw):
+        super().__init__(**kw)
+        self.x, self.y, self.name, self.caption = x, y, name, caption
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        s = 0.6 + 0.4 * ease_back(lt / 0.35)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        cx, cy = self.x, STAGE_Y + self.y
+        shape = [(-260, -120), (-120, -175), (90, -150), (250, -90), (275, 40), (180, 150), (-40, 170),
+                 (-210, 120), (-285, 10)]
+        pts = [(cx + px * s, cy + py * s) for px, py in shape]
+        d.polygon([(px + 10, py + 12) for px, py in pts], fill=(0, 0, 0, int(60 * a)))
+        d.polygon(pts, fill=with_alpha((196, 110, 70), a), outline=with_alpha((120, 60, 35), a), width=6)
+        n = int(len(self.name) * clamp((lt - 0.3) / 1.0))
+        d.text((cx, cy), self.name[:n], font=font("bold", int(50 * s)), fill=with_alpha((40, 25, 20), a),
+               anchor="mm")
+        if self.caption:
+            _label(d, cx, cy + 230, self.caption, font("bold", 34), PAL["ink"], a * clamp((lt - 1.0) / 0.3), "mm", 5)
+        fr.comp(L)
