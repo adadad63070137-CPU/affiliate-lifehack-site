@@ -548,3 +548,106 @@ class Ostracon(El):
         if self.caption:
             _label(d, cx, cy + 230, self.caption, font("bold", 34), PAL["ink"], a * clamp((lt - 1.0) / 0.3), "mm", 5)
         fr.comp(L)
+
+
+class Trireme(El):
+    """三段櫂船（3段のオールが動く）"""
+    sfx = "whoosh"
+
+    def __init__(self, y=520, label=True, **kw):
+        super().__init__(**kw)
+        self.y, self.label = y, label
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        cx = W / 2 + (1 - ease_out(lt / 1.0)) * -700
+        cy = STAGE_Y + self.y + math.sin(lt * 2) * 6
+        # 波
+        for i in range(4):
+            yy = STAGE_Y + self.y + 90 + i * 45
+            pts = [(x, yy + math.sin(x / 40 + lt * 3 + i) * 8) for x in range(0, W + 20, 20)]
+            d.line(pts, fill=with_alpha((120, 170, 180), a * (0.8 - i * 0.15)), width=5)
+        # オール（3段）
+        for tier in range(3):
+            for i in range(11):
+                ox = cx - 330 + i * 62 + tier * 14
+                oy = cy + 10 + tier * 18
+                ang = math.radians(110 + 22 * math.sin(lt * 5 + i * 0.2 + tier))
+                ln = 120 + tier * 20
+                d.line([(ox, oy), (ox + math.cos(ang) * ln * 0.45, oy + math.sin(ang) * ln)],
+                       fill=with_alpha((110, 80, 50), a), width=6)
+        # 船体
+        hull = [(cx - 420, cy - 40), (cx + 360, cy - 40), (cx + 470, cy + 20), (cx + 360, cy + 40),
+                (cx - 360, cy + 40), (cx - 440, cy - 90)]
+        d.polygon(hull, fill=with_alpha((120, 70, 45), a), outline=with_alpha(PAL["ink"], a), width=5)
+        d.rectangle([cx - 400, cy - 20, cx + 380, cy - 4], fill=with_alpha(PAL["gold"], a))
+        d.ellipse([cx + 330, cy - 34, cx + 360, cy - 14], fill=with_alpha(PAL["white"], a),
+                  outline=with_alpha(PAL["ink"], a), width=3)
+        # マスト・帆
+        d.line([(cx - 20, cy - 40), (cx - 20, cy - 300)], fill=with_alpha((110, 80, 50), a), width=10)
+        d.polygon([(cx - 170, cy - 280), (cx + 130, cy - 280), (cx + 110, cy - 110), (cx - 150, cy - 110)],
+                  fill=with_alpha((245, 235, 210), a), outline=with_alpha(PAL["coast"], a), width=4)
+        d.ellipse([cx - 60, cy - 235, cx + 20, cy - 155], outline=with_alpha(PAL["red"], a), width=8)
+        if self.label:
+            la = a * clamp((lt - 0.6) / 0.3)
+            _label(d, W / 2, STAGE_Y + 70, "三段櫂船（さんだんかいせん）", font("black", 50), PAL["ink"], la, "mm", 7)
+            _label(d, W / 2, STAGE_Y + 128, "こぎ手は財産のない市民", font("bold", 38), PAL["red"], la, "mm", 5)
+        fr.comp(L)
+
+
+ASSEMBLY_ROWS = [("成年男性市民", PAL["teal"]), ("女性", PAL["red"]), ("奴隷", PAL["dim"]), ("在留外人", PAL["gold"])]
+
+
+def _person(d, x, y, col, a, s=1.0):
+    d.ellipse([x - 20 * s, y - 62 * s, x + 20 * s, y - 22 * s], fill=with_alpha(col, a))
+    d.rounded_rectangle([x - 30 * s, y - 16 * s, x + 30 * s, y + 50 * s], radius=int(18 * s), fill=with_alpha(col, a))
+
+
+class Assembly(El):
+    """民会に参加できる人・できない人"""
+
+    def __init__(self, top=210, **kw):
+        super().__init__(**kw)
+        self.top = top
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        _label(d, W / 2, STAGE_Y + 90, "民会に参加できるのは？", font("black", 56), PAL["ink"], a, "mm", 7)
+        for r, (name, col) in enumerate(ASSEMBLY_ROWS):
+            k = ease_back((lt - r * 0.12) / 0.35)
+            if k <= 0:
+                continue
+            y = STAGE_Y + self.top + r * 180 + 60
+            ra = a * clamp(k)
+            _label(d, 60, y, name, font("black", 44), col, ra, "lm", 6)
+            for i in range(5):
+                _person(d, 410 + i * 105, y + 4, col, ra, clamp(k, 0, 1.1))
+        fr.comp(L)
+
+
+class AssemblyCross(El):
+    """女性・奴隷・在留外人に✕（参政権なし）"""
+    sfx = "stamp"
+
+    def __init__(self, top=210, **kw):
+        super().__init__(**kw)
+        self.top = top
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        k = ease_out(lt / 0.25)
+        for r in (1, 2, 3):
+            y = STAGE_Y + self.top + r * 180 + 60
+            d.rounded_rectangle([30, y - 80, W - 30, y + 70], radius=20, fill=(236, 226, 200, int(160 * a * k)))
+            s = 50 * (2 - k)
+            d.line([(W - 110 - s, y - s), (W - 110 + s, y + s)], fill=with_alpha(PAL["red"], a * k), width=16)
+            d.line([(W - 110 - s, y + s), (W - 110 + s, y - s)], fill=with_alpha(PAL["red"], a * k), width=16)
+        y = STAGE_Y + self.top + 60
+        d.ellipse([W - 160, y - 50, W - 60, y + 50], outline=with_alpha(PAL["teal"], a * k), width=14)
+        fr.comp(L)
