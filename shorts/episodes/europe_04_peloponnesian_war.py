@@ -8,8 +8,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.core import PAL, TTS, Scene, Video  # noqa: E402
-from engine.elements import (Arrow, Card, EndCard, Glow, Hook, Marker, Stamp, Step, Table,  # noqa: E402
-                             Temple)
+from engine.elements import (AnswerCard, Arrow, Card, Glow, Marker, QuizHook, Stamp, Step, Table, Temple)  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "output")
 HEADER = "ヨーロッパ編 #4  ペロポネソス戦争"
@@ -44,9 +43,9 @@ def exam():
     """受験版（高校生・30〜45秒）"""
     scenes = [
         Scene([
-            "【ペロポネソス戦争】を/40秒で総整理！",
-        ], cam=CAM_BLOCS, els=[
-            Hook("テスト頻出", ["ペロポネソス", "【戦争】"], sub="前431〜前404年"),
+            ("アテネと戦うスパルタを/【支援】したのは？", "アテネと戦うスパルタを、支援したのは？"),
+        ], stage='plain', pad=0.15, caption='コメントで予想してね！', els=[
+            QuizHook(['アテネと戦うスパルタを', '【支援】したのは？'], ['ペルシア', 'マケドニア', 'ローマ'], kicker='テストに出る！'),
         ]),
         Scene([
             ("アテネの【デロス同盟】vs/スパルタの【ペロポネソス同盟】",
@@ -88,7 +87,7 @@ def exam():
         ]),
         Scene([
             "まとめ！/ここ、テストに出ます",
-        ], stage="plain", hold=2.6, els=[Table(
+        ], stage="plain", hold=2.2, els=[Table(
             ["アテネ側", "スパルタ側"],
             [
                 ("同盟", "デロス同盟", "ペロポネソス同盟"),
@@ -100,8 +99,10 @@ def exam():
             row_dt=0.5, title="まとめ｜ペロポネソス戦争",
         )]),
         Scene([
-            "次回は/【アレクサンドロス大王】",
-        ], stage="plain", hold=0.8, els=[EndCard("ヨーロッパ編 #5", "アレクサンドロス大王")]),
+            '答えは【ペルシア】！',
+        ], stage='plain', hold=1.2, els=[
+            AnswerCard('ペルシア', note='かつての宿敵がスパルタ側に', next_text='次回：#5 アレクサンドロス大王'),
+        ]),
     ]
     return Video(scenes, header=HEADER, badge="受験版", badge_color=PAL["red"],
                  credit="VOICEVOX:四国めたん", voice=2, speed=1.26, max_dur=45.0, timeline=TIMELINE)
@@ -111,10 +112,9 @@ def general():
     """教養版（一般・60秒）"""
     scenes = [
         Scene([
-            "同じギリシア人同士が/27年も戦い続けた",
-            "きっかけは/【お金】でした",
-        ], cam=CAM_BLOCS, els=[
-            Hook("ギリシア最大の内戦", ["27年の", "【内戦】"]),
+            ("パルテノン神殿を/建てた【お金】はどこから？", "パルテノン神殿を建てたお金は、どこから？"),
+        ], stage='plain', pad=0.15, caption='コメントで予想してね！', els=[
+            QuizHook(['パルテノン神殿を', '建てた【お金】はどこから？']),
         ]),
         Scene([
             "ペルシアに備えて作った/【デロス同盟】",
@@ -159,14 +159,9 @@ def general():
             Stamp(660, 400, "降伏", size=90, at="c1+0.3"),
         ]),
         Scene([
-            "でも勝ったスパルタも/長くは続きません",
-            "弱ったギリシアを/北から狙う国が…",
-            "次回【アレクサンドロス大王】",
-            "フォローして/お待ちください",
-        ], cam=(23.0, 40.0, 70), year=-360, hold=0.6, els=[
-            Marker(*THEBES, "テーベ", side="r", sub="次の覇者", dur=2.6),
-            Arrow([(22.3, 41.6), (22.6, 40.3), (22.9, 39.2)], col=PAL["ink"], width=14, label="北の国", at="c1"),
-            EndCard("ヨーロッパ編 #5", "アレクサンドロス大王", at="c2"),
+            '答えは【デロス同盟の資金】！',
+        ], stage='plain', hold=1.2, els=[
+            AnswerCard('デロス同盟の資金', note='同盟の金庫をアテネが使った/といわれています', next_text='次回：#5 アレクサンドロス大王'),
         ]),
     ]
     return Video(scenes, header=HEADER, badge="教養版", badge_color=PAL["teal"],

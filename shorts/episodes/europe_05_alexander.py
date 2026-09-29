@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.core import PAL, TTS, Scene, Video  # noqa: E402
-from engine.elements import (Arrow, Card, EndCard, Glow, Hook, MapLabel, Marker, Stamp, Table)  # noqa: E402
+from engine.elements import (AnswerCard, Arrow, Card, Glow, MapLabel, Marker, QuizHook, Stamp, Table)  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "output")
 HEADER = "ヨーロッパ編 #5  アレクサンドロス大王"
@@ -58,9 +58,9 @@ def exam():
     """受験版（高校生・30〜45秒）"""
     scenes = [
         Scene([
-            "【アレクサンドロス大王】を/40秒で総整理！",
-        ], cam=CAM_WORLD, els=[
-            Hook("テスト頻出", ["アレクサンドロス", "【大王】"], sub="前336〜前323年"),
+            ("大王の東方遠征で/【滅んだ王朝】は？", "大王の東方遠征で、滅んだ王朝は？"),
+        ], stage='plain', pad=0.15, caption='コメントで予想してね！', els=[
+            QuizHook(['大王の東方遠征で', '【滅んだ王朝】は？'], ['アケメネス朝', 'セレウコス朝', 'プトレマイオス朝'], kicker='テストに出る！'),
         ]),
         Scene([
             ("前338年【カイロネイアの戦い】/マケドニアがギリシアを制圧",
@@ -101,7 +101,7 @@ def exam():
         ]),
         Scene([
             "まとめ！/ここ、テストに出ます",
-        ], stage="plain", hold=2.6, els=[Table(
+        ], stage="plain", hold=2.2, els=[Table(
             ["できごと", "ポイント"],
             [
                 ("前338", "カイロネイア", "【フィリッポス2世】/コリントス同盟"),
@@ -113,8 +113,10 @@ def exam():
             row_dt=0.5, title="まとめ｜アレクサンドロス大王",
         )]),
         Scene([
-            "次回は/【ローマの誕生】",
-        ], stage="plain", hold=0.8, els=[EndCard("ヨーロッパ編 #6", "ローマの誕生")]),
+            ('答えは【アケメネス朝】！', '答えは、アケメネスちょう！'),
+        ], stage='plain', hold=1.2, els=[
+            AnswerCard('アケメネス朝', note='前330年に滅亡', next_text='次回：#6 ローマの誕生'),
+        ]),
     ]
     return Video(scenes, header=HEADER, badge="受験版", badge_color=PAL["red"],
                  credit="VOICEVOX:四国めたん", voice=2, speed=1.26, max_dur=45.0, timeline=TIMELINE)
@@ -124,13 +126,12 @@ def general():
     """教養版（一般・60秒）"""
     scenes = [
         Scene([
-            "家庭教師はあの【アリストテレス】",
-            "20歳で王になり/世界の果てを目指した男",
-        ], cam=CAM_WORLD, els=[
-            Hook("世界征服の若き王", ["20歳の", "【大王】"]),
+            ("アレクサンドロス大王/何歳で【亡くなった】？", "アレクサンドロス大王は、何歳で亡くなった？"),
+        ], stage='plain', pad=0.15, caption='コメントで予想してね！', els=[
+            QuizHook(['アレクサンドロス大王', '何歳で【亡くなった】？']),
         ]),
         Scene([
-            "その名は【アレクサンドロス】",
+            "20歳で王になった/【アレクサンドロス】",
             ("北の国【マケドニア】の王です", "北の国、マケドニアの王です"),
         ], cam=CAM_GREECE, year=-336, els=[
             Marker(*PELLA, "マケドニア", side="r"),
@@ -173,9 +174,10 @@ def general():
             Card(750, 850, 560, "ヘレニズム文化", ["ギリシア＋オリエント"], col=PAL["teal"], at="c1"),
         ]),
         Scene([
-            "次回は舞台を西へ/【ローマの誕生】",
-            "フォローして/お待ちください",
-        ], stage="plain", hold=0.6, els=[EndCard("ヨーロッパ編 #6", "ローマの誕生")]),
+            '答えは【32歳】！',
+        ], stage='plain', hold=1.2, els=[
+            AnswerCard('32歳', note='帰り道のバビロンで急死', next_text='次回：#6 ローマの誕生'),
+        ]),
     ]
     return Video(scenes, header=HEADER, badge="教養版", badge_color=PAL["teal"],
                  credit="VOICEVOX:春日部つむぎ", voice=8, speed=1.02, max_dur=59.0, timeline=TIMELINE)

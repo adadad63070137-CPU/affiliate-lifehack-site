@@ -681,3 +681,85 @@ class Temple(El):
             d.rectangle([cx - w * s, cy + (90 + j * 20) * s, cx + w * s, cy + (110 + j * 20) * s],
                         fill=marble, outline=ink, width=4)
         fr.comp(L)
+
+
+class QuizHook(El):
+    """冒頭のクイズ（1コマ目から全部見える・明るい画面）"""
+    sfx = None
+
+    def __init__(self, question, options=None, kicker="世界史クイズ", **kw):
+        super().__init__(**kw)
+        self.question, self.options, self.kicker = question, options or [], kicker
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        d.rectangle([0, STAGE_Y, W, STAGE_Y + STAGE_H], fill=with_alpha((250, 243, 225), a))
+        fk = font("black", 42)
+        kw_ = text_w(self.kicker, fk)
+        y = STAGE_Y + 80
+        d.rounded_rectangle([W / 2 - kw_ / 2 - 32, y - 36, W / 2 + kw_ / 2 + 32, y + 36], radius=36,
+                            fill=with_alpha(PAL["ink"], a))
+        d.text((W / 2, y), self.kicker, font=fk, fill=with_alpha(PAL["gold"], a), anchor="mm")
+        s = 1 + 0.04 * math.sin(lt * 5)
+        d.text((W / 2, STAGE_Y + 215), "Q.", font=font("black", int(150 * s)), fill=with_alpha(PAL["red"], a),
+               anchor="mm", stroke_width=8, stroke_fill=with_alpha(PAL["white"], a))
+        fq = font("black", 80)
+        y = STAGE_Y + 320
+        for line in self.question:
+            segs = parse_markup(line)
+            lw = sum(text_w(t, fq) for t, _ in segs)
+            x = W / 2 - lw / 2
+            for t, em in segs:
+                d.text((x, y), t, font=fq, fill=with_alpha(PAL["red"] if em else PAL["ink"], a),
+                       stroke_width=6, stroke_fill=with_alpha(PAL["white"], a))
+                x += text_w(t, fq)
+            y += 108
+        y += 20
+        fo = font("black", 52)
+        for i, opt in enumerate(self.options):
+            d.rounded_rectangle([110, y, W - 110, y + 92], radius=24, fill=with_alpha(PAL["white"], a),
+                                outline=with_alpha(PAL["ink"], a), width=5)
+            d.text((150, y + 46), "①②③④"[i], font=fo, fill=with_alpha(PAL["red"], a), anchor="lm")
+            d.text((225, y + 46), opt, font=fo, fill=with_alpha(PAL["ink"], a), anchor="lm")
+            y += 112
+        d.text((W / 2, STAGE_Y + STAGE_H - 55), "答えは最後に！", font=font("black", int(48 * (1 + 0.05 * math.sin(lt * 5)))),
+               fill=with_alpha(PAL["red"], a), anchor="mm")
+        fr.comp(L)
+
+
+class AnswerCard(El):
+    """最後の答え合わせ（次回はここに小さく添える）"""
+    sfx = "ding"
+
+    def __init__(self, answer, note=None, next_text=None, **kw):
+        super().__init__(**kw)
+        self.answer, self.note, self.next_text = answer, note, next_text
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        d.rectangle([0, STAGE_Y, W, STAGE_Y + STAGE_H], fill=with_alpha((250, 243, 225), a))
+        k = ease_back(lt / 0.4)
+        d.text((W / 2, STAGE_Y + 190), "A.", font=font("black", 150), fill=with_alpha(PAL["teal"], a), anchor="mm",
+               stroke_width=8, stroke_fill=with_alpha(PAL["white"], a))
+        s = clamp(k, 0, 1.2)
+        fa = font("black", max(8, int(104 * s)))
+        d.text((W / 2, STAGE_Y + 420), self.answer, font=fa, fill=with_alpha(PAL["red"], a), anchor="mm",
+               stroke_width=10, stroke_fill=with_alpha(PAL["white"], a))
+        if self.note:
+            na = a * clamp((lt - 0.3) / 0.3)
+            y = STAGE_Y + 560
+            for line in self.note.split("/"):
+                d.text((W / 2, y), line, font=font("bold", 48), fill=with_alpha(PAL["ink"], na), anchor="mm")
+                y += 66
+        if self.next_text:
+            f = font("black", 40)
+            tw = text_w(self.next_text, f)
+            y = STAGE_Y + STAGE_H - 90
+            d.rounded_rectangle([W / 2 - tw / 2 - 36, y - 40, W / 2 + tw / 2 + 36, y + 40], radius=40,
+                                fill=with_alpha(PAL["ink"], a))
+            d.text((W / 2, y), self.next_text, font=f, fill=with_alpha(PAL["white"], a), anchor="mm")
+        fr.comp(L)

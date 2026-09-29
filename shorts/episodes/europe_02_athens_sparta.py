@@ -8,8 +8,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.core import PAL, TTS, Scene, Video  # noqa: E402
-from engine.elements import (Card, EndCard, Hook, Marker, Ostracon, Phalanx, PyramidTier,  # noqa: E402
-                             Stamp, Step, Table)
+from engine.elements import (AnswerCard, Card, Marker, Ostracon, Phalanx, PyramidTier,  # noqa: E402
+                             QuizHook, Stamp, Step, Table)
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "output")
 HEADER = "ヨーロッパ編 #2  アテネとスパルタ"
@@ -58,9 +58,9 @@ def exam():
     """受験版（高校生・30〜45秒）"""
     scenes = [
         Scene([
-            "【アテネ】と【スパルタ】/違いを40秒で整理！",
-        ], cam=CAM_GREECE, els=[
-            Hook("テスト頻出", ["アテネ", "vs【スパルタ】"], sub="40秒で総整理"),
+            ("スパルタで農業をした/【隷属農民】を何という？", "スパルタで農業をした、隷属農民を何という？"),
+        ], stage='plain', pad=0.15, caption='コメントで予想してね！', els=[
+            QuizHook(['スパルタで農業をした', '【隷属農民】を何という？'], ['ペリオイコイ', 'ヘイロータイ', 'デマゴーゴス'], kicker='テストに出る！'),
         ]),
         Scene([
             "スパルタは【ドーリア人】/アテネは【イオニア人】のポリス",
@@ -90,7 +90,7 @@ def exam():
               els=[step(3)]),
         Scene([
             "まとめ！/ここ、テストに出ます",
-        ], stage="plain", hold=2.6, els=[Table(
+        ], stage="plain", hold=2.2, els=[Table(
             ["アテネ", "スパルタ"],
             [
                 ("民族", "イオニア人", "ドーリア人"),
@@ -102,8 +102,10 @@ def exam():
             row_dt=0.5, title="まとめ｜アテネ vs スパルタ",
         )]),
         Scene([
-            "次回は/【ペルシア戦争】",
-        ], stage="plain", hold=0.8, els=[EndCard("ヨーロッパ編 #3", "ペルシア戦争")]),
+            '答えは【ヘイロータイ】！',
+        ], stage='plain', hold=1.2, els=[
+            AnswerCard('ヘイロータイ', note='ペリオイコイ＝商工業の周辺民', next_text='次回：#3 ペルシア戦争'),
+        ]),
     ]
     return Video(scenes, header=HEADER, badge="受験版", badge_color=PAL["red"],
                  credit="VOICEVOX:四国めたん", voice=2, speed=1.26, max_dur=45.0, timeline=TIMELINE)
@@ -113,13 +115,12 @@ def general():
     """教養版（一般・60秒）"""
     scenes = [
         Scene([
-            ("7歳で家族と離れ/軍の共同生活へ", "7歳で家族と離れ、軍の共同生活へ"),
-            "そんな国が/本当にありました",
-        ], cam=CAM_SPARTA, els=[
-            Hook("最強の戦士国家", ["7歳で", "【入隊】？"]),
+            ("スパルタの子どもは/何歳で【家族と離れた】？", "スパルタの子どもは、何歳で家族と離れた？"),
+        ], stage='plain', pad=0.15, caption='コメントで予想してね！', els=[
+            QuizHook(['スパルタの子どもは', '何歳で【家族と離れた】？']),
         ]),
         Scene([
-            "それが古代ギリシアの/【スパルタ】",
+            "舞台は古代ギリシアの/【スパルタ】",
             "隣の【アテネ】とは/まるで正反対の国です",
         ], cam=CAM_GREECE, year=-750, els=[
             Marker(*SPARTA, "スパルタ", side="l"),
@@ -160,10 +161,10 @@ def general():
             Stamp(800, 420, "追放！", at="c2+0.3"),
         ]),
         Scene([
-            "正反対の2つの国が/手を組む日が来ます",
-            "次回【ペルシア戦争】",
-            "フォローして/お待ちください",
-        ], stage="plain", hold=0.6, els=[EndCard("ヨーロッパ編 #3", "ペルシア戦争", at="c1")]),
+            '答えは【7歳】！',
+        ], stage='plain', hold=1.2, els=[
+            AnswerCard('7歳', note='軍の共同生活で鍛えられた', next_text='次回：#3 ペルシア戦争'),
+        ]),
     ]
     return Video(scenes, header=HEADER, badge="教養版", badge_color=PAL["teal"],
                  credit="VOICEVOX:春日部つむぎ", voice=8, speed=1.02, max_dur=59.0, timeline=TIMELINE)

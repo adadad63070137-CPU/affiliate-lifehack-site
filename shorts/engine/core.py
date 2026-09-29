@@ -344,12 +344,13 @@ class Chunk:
 
 class Scene:
     def __init__(self, chunks, els=(), cam=None, cam_dur=1.1, stage="map", year=None,
-                 dark=0.0, hold=0.0, pad=0.25):
+                 dark=0.0, hold=0.0, pad=0.25, caption=None):
         self.chunks = [c if isinstance(c, Chunk) else Chunk(*c) if isinstance(c, tuple) else Chunk(c)
                        for c in chunks]
         self.els = list(els)
         self.cam, self.cam_dur, self.stage, self.year = cam, cam_dur, stage, year
         self.dark, self.hold, self.pad = dark, hold, pad
+        self.caption = caption  # 字幕の代わりに出す固定テキスト（例：コメント誘導）
         self.t0 = self.t1 = 0.0
 
 
@@ -362,7 +363,9 @@ class El:
         self.t0 = self.t1 = 0.0
 
     def alpha(self, t):
-        return clamp((t - self.t0) / 0.2) * clamp((self.t1 - t) / self.fade)
+        # 0秒目から出る要素はフェードインしない（1コマ目で内容が見えるように）
+        fade_in = 1.0 if self.t0 <= 0.001 else clamp((t - self.t0) / 0.2)
+        return fade_in * clamp((self.t1 - t) / self.fade)
 
     def draw(self, fr, lt):
         raise NotImplementedError
@@ -526,7 +529,13 @@ class Video:
                 cur = c
         if cur is None:
             return
-        k = ease_back((fr.t - cur.t0 + 0.05) / 0.22)
+        if sc.caption:
+            f = font("black", 60)
+            d = ImageDraw.Draw(fr.canvas)
+            d.rounded_rectangle([140, SUB_Y + 80, W - 140, SUB_Y + 180], radius=50, fill=PAL["ink"])
+            d.text((W / 2, SUB_Y + 130), sc.caption, font=f, fill=PAL["gold"], anchor="mm")
+            return
+        k = 1.0 if cur.t0 <= 0.001 else ease_back((fr.t - cur.t0 + 0.05) / 0.22)
         lines = cur.sub.split("/")
         f = font("black", 64)
         lh = 88
@@ -584,7 +593,8 @@ class Video:
         for s in self.scenes:
             for el in s.els:
                 if el.t0 <= t < el.t1:
-                    el.draw(fr, t - el.t0)
+                    # 0秒目から出る要素は登場アニメーションを済ませた状態で描く
+                    el.draw(fr, t - el.t0 + (3.0 if el.t0 <= 0.001 else 0.0))
         self.draw_frame_border(fr)
         self.draw_header(fr)
         self.draw_subtitle(fr, sc)

@@ -8,8 +8,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from engine.core import PAL, TTS, Scene, Video  # noqa: E402
-from engine.elements import (Arrow, Assembly, AssemblyCross, Card, EndCard, Hook, Marker, Phalanx,  # noqa: E402
-                             Stamp, Table, Trireme)
+from engine.elements import (AnswerCard, Arrow, Assembly, AssemblyCross, Card, Marker,  # noqa: E402
+                             QuizHook, Table, Trireme)
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "output")
 HEADER = "ヨーロッパ編 #3  ペルシア戦争"
@@ -40,9 +40,9 @@ def exam():
     """受験版（高校生・30〜45秒）"""
     scenes = [
         Scene([
-            "【ペルシア戦争】を/40秒で総整理！",
-        ], cam=CAM_WAR, els=[
-            Hook("テスト頻出", ["ペルシア", "【戦争】"], sub="前500〜前449年"),
+            ("サラミスの海戦で/【船をこいだ】のは？", "サラミスの海戦で、船をこいだのは？"),
+        ], stage='plain', pad=0.15, caption='コメントで予想してね！', els=[
+            QuizHook(['サラミスの海戦で', '【船をこいだ】のは？'], ['貴族', '重装歩兵', '無産市民'], kicker='テストに出る！'),
         ]),
         Scene([
             "前500年【イオニア植民市】が/ペルシアに反乱",
@@ -82,7 +82,7 @@ def exam():
         ]),
         Scene([
             "まとめ！/ここ、テストに出ます",
-        ], stage="plain", hold=2.6, els=[Table(
+        ], stage="plain", hold=2.2, els=[Table(
             ["できごと", "ポイント"],
             [
                 ("前500", "イオニア反乱", "【ミレトス】中心"),
@@ -94,8 +94,10 @@ def exam():
             row_dt=0.5, title="まとめ｜ペルシア戦争",
         )]),
         Scene([
-            "次回は/【ペロポネソス戦争】",
-        ], stage="plain", hold=0.8, els=[EndCard("ヨーロッパ編 #4", "ペロポネソス戦争")]),
+            '答えは【無産市民】！',
+        ], stage='plain', hold=1.2, els=[
+            AnswerCard('無産市民', note='財産のない市民が発言力を強めた', next_text='次回：#4 ペロポネソス戦争'),
+        ]),
     ]
     return Video(scenes, header=HEADER, badge="受験版", badge_color=PAL["red"],
                  credit="VOICEVOX:四国めたん", voice=2, speed=1.26, max_dur=45.0, timeline=TIMELINE)
@@ -105,13 +107,12 @@ def general():
     """教養版（一般・60秒）"""
     scenes = [
         Scene([
-            "たった300人で/大軍に立ち向かった王",
-            "伝説の戦いは/本当にありました",
-        ], cam=(22.8, 38.8, 170), els=[
-            Hook("伝説の300人", ["300人", "vs【大帝国】"]),
+            ("「【マラソン】」の/名前の由来は？", "マラソンの名前の由来は？"),
+        ], stage='plain', pad=0.15, caption='コメントで予想してね！', els=[
+            QuizHook(['「【マラソン】」の', '名前の由来は？']),
         ]),
         Scene([
-            "相手は当時/世界最大の【ペルシア帝国】",
+            "ギリシアの敵は/世界最大の【ペルシア帝国】",
             "ギリシアのポリスは/力を合わせて戦います",
         ], cam=CAM_WAR, year=-500, els=[
             Arrow(PERSIA_ARROW, label="ペルシア", label_at=0.62),
@@ -151,12 +152,9 @@ def general():
             Assembly(), AssemblyCross(at="c1"),
         ]),
         Scene([
-            "ところが勝ったギリシアは/やがて仲間割れへ…",
-            "次回【ペロポネソス戦争】",
-            "フォローして/お待ちください",
-        ], stage="plain", hold=0.6, els=[
-            Phalanx(y=560, dur=2.6),
-            EndCard("ヨーロッパ編 #4", "ペロポネソス戦争", at="c1"),
+            '答えは【マラトンの戦い】！',
+        ], stage='plain', hold=1.2, els=[
+            AnswerCard('マラトンの戦い', note='勝利を伝えた伝令の伝説から', next_text='次回：#4 ペロポネソス戦争'),
         ]),
     ]
     return Video(scenes, header=HEADER, badge="教養版", badge_color=PAL["teal"],
