@@ -95,10 +95,10 @@ class Arrow(El):
     """経路が伸びていく矢印（民族移動など）"""
     sfx = "whoosh"
 
-    def __init__(self, path, col=PAL["red"], width=18, draw_dur=1.2, label=None, label_at=0.5, **kw):
+    def __init__(self, path, col=PAL["red"], width=18, draw_dur=1.2, label=None, label_at=0.5, label_dy=0, **kw):
         super().__init__(**kw)
         self.path, self.col, self.width, self.draw_dur = path, col, width, draw_dur
-        self.label, self.label_at = label, label_at
+        self.label, self.label_at, self.label_dy = label, label_at, label_dy
 
     def draw(self, fr, lt):
         a = self.alpha(fr.t)
@@ -142,7 +142,7 @@ class Arrow(El):
             idx = int(len(sm) * self.label_at)
             lx, ly = sm[idx]
             la = a * clamp((lt - self.draw_dur * 0.5) / 0.3)
-            _label(d, lx + 36, ly, self.label, font("black", 46), self.col, la, "lm", 7)
+            _label(d, lx + 36, ly + self.label_dy, self.label, font("black", 46), self.col, la, "lm", 7)
         fr.comp(L)
 
 
@@ -650,4 +650,34 @@ class AssemblyCross(El):
             d.line([(W - 110 - s, y + s), (W - 110 + s, y - s)], fill=with_alpha(PAL["red"], a * k), width=16)
         y = STAGE_Y + self.top + 60
         d.ellipse([W - 160, y - 50, W - 60, y + 50], outline=with_alpha(PAL["teal"], a * k), width=14)
+        fr.comp(L)
+
+
+class Temple(El):
+    """パルテノン神殿（簡略図）"""
+
+    def __init__(self, x, y, s=1.0, **kw):
+        super().__init__(**kw)
+        self.x, self.y, self.s = x, y, s
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        k = ease_back(lt / 0.4)
+        s = self.s * clamp(k, 0, 1.15)
+        if s <= 0.02:
+            return
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        cx, cy = self.x, STAGE_Y + self.y
+        ink, marble = with_alpha(PAL["ink"], a), with_alpha(PAL["white"], a)
+        d.polygon([(cx - 250 * s, cy - 130 * s), (cx + 250 * s, cy - 130 * s), (cx, cy - 230 * s)],
+                  fill=marble, outline=ink, width=6)
+        d.rectangle([cx - 260 * s, cy - 130 * s, cx + 260 * s, cy - 100 * s], fill=marble, outline=ink, width=5)
+        for i in range(8):
+            x = cx - 220 * s + i * 440 / 7 * s
+            d.rectangle([x - 17 * s, cy - 100 * s, x + 17 * s, cy + 90 * s], fill=marble, outline=ink, width=4)
+        for j in range(3):
+            w = 270 + j * 20
+            d.rectangle([cx - w * s, cy + (90 + j * 20) * s, cx + w * s, cy + (110 + j * 20) * s],
+                        fill=marble, outline=ink, width=4)
         fr.comp(L)
