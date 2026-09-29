@@ -147,11 +147,11 @@ def merc(lat):
 
 
 class MapBase:
-    LON0, LON1, LAT0, LAT1 = -12.0, 46.0, 27.0, 58.0
+    LON0, LON1, LAT0, LAT1 = -12.0, 80.0, 7.0, 58.0
     PPD = 100  # base image: px per degree of longitude
 
     def __init__(self):
-        path = os.path.join(CACHE, "mapbase_v1.png")
+        path = os.path.join(CACHE, "mapbase_v2.png")
         self.w = int((self.LON1 - self.LON0) * self.PPD)
         self.h = int((merc(self.LAT1) - merc(self.LAT0)) * self.PPD)
         if os.path.exists(path):
@@ -208,10 +208,10 @@ class MapBase:
         img = Image.composite(Image.new("RGB", img.size, PAL["coast"]), img, line)
         # 経緯線
         d = ImageDraw.Draw(img)
-        for lon in range(-10, 46, 5):
+        for lon in range(-10, 81, 5):
             x = self.bxy(lon, 0)[0]
             d.line([(x, 0), (x, self.h)], fill=(160, 150, 125), width=1)
-        for lat in range(30, 58, 5):
+        for lat in range(10, 58, 5):
             y = self.bxy(0, lat)[1]
             d.line([(0, y), (self.w, y)], fill=(160, 150, 125), width=1)
         return img
