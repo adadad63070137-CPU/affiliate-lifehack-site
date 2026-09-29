@@ -1,0 +1,4 @@
+.cache/
+output/preview/
+*.wav
+*.seg*.mp4
