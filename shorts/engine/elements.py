@@ -351,9 +351,10 @@ class Table(El):
     """比較表（行が順番に出る）"""
     sfx = "pop"
 
-    def __init__(self, heads, rows, row_dt=0.55, title="まとめ", **kw):
+    def __init__(self, heads, rows, row_dt=0.55, title="まとめ", row_h=128, **kw):
         super().__init__(**kw)
         self.heads, self.rows, self.row_dt, self.title = heads, rows, row_dt, title
+        self.row_h = row_h
 
     def draw(self, fr, lt):
         a = self.alpha(fr.t)
@@ -372,7 +373,7 @@ class Table(El):
             d.rounded_rectangle([xa + 6, y, xb - 6, y + 76], radius=14, fill=with_alpha(cols[i], a))
             d.text(((xa + xb) / 2, y + 38), h, font=fh, fill=with_alpha(PAL["white"], a), anchor="mm")
         y += 90
-        rh = 128
+        rh = self.row_h
         for r, (name, v1, v2) in enumerate(self.rows):
             k = ease_out((lt - 0.2 - r * self.row_dt) / 0.3)
             if k <= 0:
@@ -463,9 +464,10 @@ class PyramidTier(El):
 class Step(El):
     """民主化の階段の1段（i=0 が一番下）"""
 
-    def __init__(self, i, year, name, desc, col=PAL["teal"], n=4, **kw):
+    def __init__(self, i, year, name, desc, col=PAL["teal"], n=4, name_size=50, **kw):
         super().__init__(**kw)
         self.i, self.year, self.name, self.desc, self.col, self.n = i, year, name, desc, col, n
+        self.name_size = name_size
 
     def draw(self, fr, lt):
         a = self.alpha(fr.t)
@@ -483,7 +485,7 @@ class Step(El):
         d.rectangle([x0 + 150, y0, x0 + 170, y1], fill=with_alpha(self.col, a))
         d.text((x0 + 85, (y0 + y1) / 2), self.year, font=font("black", 40), fill=with_alpha(PAL["white"], a),
                anchor="mm")
-        d.text((x0 + 195, y0 + 50), self.name, font=font("black", 50), fill=with_alpha(PAL["ink"], a), anchor="lm")
+        d.text((x0 + 195, y0 + 50), self.name, font=font("black", self.name_size), fill=with_alpha(PAL["ink"], a), anchor="lm")
         segs = parse_markup(self.desc)
         x = x0 + 197
         fb = font("bold", 32)
