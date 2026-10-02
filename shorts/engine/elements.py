@@ -765,3 +765,44 @@ class AnswerCard(El):
                                 fill=with_alpha(PAL["ink"], a))
             d.text((W / 2, y), self.next_text, font=f, fill=with_alpha(PAL["white"], a), anchor="mm")
         fr.comp(L)
+
+
+class Elephant(El):
+    """戦象（簡略イラスト・足踏みアニメ）"""
+
+    def __init__(self, x, y, s=1.0, label=None, **kw):
+        super().__init__(**kw)
+        self.x, self.y, self.s, self.label = x, y, s, label
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        k = ease_back(lt / 0.4)
+        s = self.s * clamp(k, 0, 1.15)
+        if s <= 0.02:
+            return
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        cx, cy = self.x, STAGE_Y + self.y + math.sin(lt * 6) * 4 * s
+        body, dark = with_alpha((150, 150, 162), a), with_alpha((110, 110, 125), a)
+        ink = with_alpha(PAL["ink"], a)
+        for i, lx in enumerate((-70, -30, 35, 75)):
+            off = math.sin(lt * 6 + i * math.pi / 2) * 8 * s
+            d.rounded_rectangle([cx + (lx - 16) * s, cy + 20 * s, cx + (lx + 16) * s, cy + (105 + off) * s],
+                                radius=int(10 * s), fill=body, outline=ink, width=4)
+        d.ellipse([cx - 115 * s, cy - 75 * s, cx + 100 * s, cy + 65 * s], fill=body, outline=ink, width=5)
+        d.ellipse([cx + 55 * s, cy - 100 * s, cx + 165 * s, cy + 10 * s], fill=body, outline=ink, width=5)
+        d.ellipse([cx + 45 * s, cy - 85 * s, cx + 105 * s, cy - 5 * s], fill=dark, outline=ink, width=4)
+        trunk = [(cx + 150 * s, cy - 30 * s), (cx + 175 * s, cy + 20 * s), (cx + 180 * s, cy + 70 * s),
+                 (cx + 168 * s, cy + 95 * s)]
+        d.line(trunk, fill=ink, width=int(30 * s) + 6, joint="curve")
+        d.line(trunk, fill=body, width=int(30 * s), joint="curve")
+        d.polygon([(cx + 135 * s, cy - 5 * s), (cx + 150 * s, cy + 30 * s), (cx + 125 * s, cy + 5 * s)],
+                  fill=with_alpha(PAL["white"], a), outline=ink)
+        d.ellipse([cx + 120 * s, cy - 65 * s, cx + 134 * s, cy - 51 * s], fill=ink)
+        d.line([(cx - 115 * s, cy - 20 * s), (cx - 140 * s, cy + 20 * s)], fill=ink, width=6)
+        # 背中の鞍
+        d.rounded_rectangle([cx - 60 * s, cy - 95 * s, cx + 40 * s, cy - 60 * s], radius=int(10 * s),
+                            fill=with_alpha(PAL["red"], a), outline=ink, width=4)
+        if self.label:
+            _label(d, cx, cy + 150 * s, self.label, font("black", 46), PAL["ink"], a, "mm", 6)
+        fr.comp(L)
