@@ -67,7 +67,7 @@ def commons(title):
         d = _api("https://commons.wikimedia.org/w/api.php?" + q)
         page = list(d["query"]["pages"].values())[0]
         ii = page["imageinfo"][0]
-        if "thumburl" not in ii or ii["thumburl"].split("?")[0] == ii["url"].split("?")[0]:
+        if "/thumb/" not in ii.get("thumburl", ""):
             # 元画像が 1920px より小さいと縮小版が作られない。元画像の直接取得は断られやすいので標準の 1280px 版を使う
             q = q.replace("iiurlwidth=1920", "iiurlwidth=1280")
             ii = list(_api("https://commons.wikimedia.org/w/api.php?" + q)["query"]["pages"].values())[0]["imageinfo"][0]
