@@ -11,7 +11,7 @@
 | `output/europe_long01_greece_rome_thumbnail.png` | サムネイル（1280×720） | | |
 | `output/europe_long01_greece_rome_chapters.txt` | YouTube チャプター（説明欄に貼る） | | |
 | `output/europe_long01_greece_rome_timing.txt` | ナレーション原稿とタイムコード | | |
-| `output/europe_long02_rome_republic_to_empire.mp4` | ヨーロッパ編 長編 #2 ポエニ戦争〜帝政の始まり（実写寄り） | 8分36秒 | VOICEVOX:春日部つむぎ |
+| `output/europe_long02_rome_republic_to_empire.mp4` | ヨーロッパ編 長編 #2 ポエニ戦争〜帝政の始まり（実写寄り・80MB） | 8分36秒 | VOICEVOX:春日部つむぎ |
 | `output/europe_long02_rome_republic_to_empire_thumbnail.png` | サムネイル（1280×720） | | |
 | `output/europe_long02_rome_republic_to_empire_chapters.txt` | YouTube チャプター | | |
 | `output/europe_long02_rome_republic_to_empire_timing.txt` | ナレーション原稿・タイムコード・画像クレジット | | |
