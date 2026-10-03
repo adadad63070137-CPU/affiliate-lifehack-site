@@ -4,7 +4,7 @@ x, y を取る図解要素はステージ内の座標（左上が 0,0）。地�
 """
 import math
 
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 from .core import (El, PAL, STAGE_H, STAGE_Y, W, clamp, draw_markup, ease_back, ease_io, ease_out, font,
                    markup_w, text_w, with_alpha)
@@ -819,10 +819,11 @@ class Summary(El):
     sfx = None
     ROWS = (110, 220, 330)
 
-    def __init__(self, items, rng=(-2000, -250), breaks=None, title="総まとめ", **kw):
+    def __init__(self, items, rng=(-2000, -250), breaks=None, title="総まとめ",
+                 ticks=(-2000, -1200, -800, -500, -338, -272), **kw):
         """items=[(年, ラベル, 色, 上下(0=上/1=下), 段(0=軸に近い), 出るタイミング 秒 or 'c1+0.5', 横ずれpx)]"""
         super().__init__(**kw)
-        self.items, self.rng, self.breaks, self.title = items, rng, breaks, title
+        self.items, self.rng, self.breaks, self.title, self.ticks = items, rng, breaks, title, ticks
 
     def resolve(self, when):
         self.items = [(*it[:5], when(it[5]), *it[6:]) for it in self.items]
@@ -859,6 +860,104 @@ class Summary(El):
                                 outline=with_alpha(col, ka), width=4)
             for i, s in enumerate(lines):
                 d.text((bx + bw / 2, by + 30 + i * 44), s, font=f, fill=with_alpha(PAL["ink"], ka), anchor="mm")
-        for yr in (-2000, -1200, -800, -500, -338, -272):
+        for yr in self.ticks:
             _label(d, X(yr), ay + 34, f"前{-yr}", font("bold", 24), PAL["dim"], a, "mm", 5)
+        fr.comp(L)
+
+
+# ================================================================= 実写素材
+class Photo(El):
+    """実写素材（ゆっくりズーム＆パン）。layer='bg' なので実写寄りの見た目では映画風の質感がかかる
+
+    path, credit は engine.assets.commons() / met() の戻り値をそのまま渡す
+    mode='cover'：ステージ全体を埋める（風景・絵画） / mode='fit'：作品全体を見せ、余白はぼかした同じ画像
+    focus=(x, y)：寄っていく先（0〜1、画像内の位置）
+    work：説明欄のクレジット一覧に出す作品名（例：「ターナー『吹雪：アルプスを越えるハンニバル』」）
+    side：mode='fit' のとき作品を寄せる位置（'c' 中央 / 'l' 左 / 'r' 右）。空いた側に図解を置ける
+    """
+    sfx = None
+    layer = "bg"
+
+    def __init__(self, path, credit, mode="cover", zoom=(1.0, 1.12), focus=(0.5, 0.5), caption=None, work=None,
+                 side="c", **kw):
+        super().__init__(**kw)
+        self.src = Image.open(path).convert("RGB")
+        self.credit, self.mode, self.zoom, self.focus, self.caption = credit, mode, zoom, focus, caption
+        self.side = side
+        self.credit_full = f"{work}：{credit.replace('画像：', '')}" if work else None
+        self._bg = None
+
+    def _cover(self, im, z, fx, fy, w, h):
+        iw, ih = im.size
+        s = max(w / iw, h / ih) * z
+        cw, ch = w / s, h / s
+        cx = min(max(fx * iw, cw / 2), iw - cw / 2)
+        cy = min(max(fy * ih, ch / 2), ih - ch / 2)
+        return im.resize((w, h), Image.BILINEAR, box=(cx - cw / 2, cy - ch / 2, cx + cw / 2, cy + ch / 2))
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        dur = max(0.1, self.t1 - self.t0)
+        k = ease_io(clamp(lt / dur))
+        z = self.zoom[0] + (self.zoom[1] - self.zoom[0]) * k
+        fx = 0.5 + (self.focus[0] - 0.5) * k
+        fy = 0.5 + (self.focus[1] - 0.5) * k
+        if self.mode == "cover":
+            im = self._cover(self.src, z, fx, fy, W, STAGE_H)
+        else:
+            if self._bg is None:
+                bg = self._cover(self.src, 1.0, 0.5, 0.5, W // 4, STAGE_H // 4).filter(ImageFilter.GaussianBlur(6))
+                self._bg = bg.resize((W, STAGE_H), Image.BILINEAR).point(lambda v: int(v * 0.4))
+            im = self._bg.copy()
+            iw, ih = self.src.size
+            s = min((W * (0.92 if self.side == "c" else 0.5) - 40) / iw, (STAGE_H - 70) / ih) * z
+            fg = self.src.resize((int(iw * s), int(ih * s)), Image.BILINEAR)
+            cx = {"c": W / 2, "l": W * 0.27, "r": W * 0.73}[self.side]
+            im.paste(fg, (int(cx - fg.width / 2), (STAGE_H - fg.height) // 2))
+        im = im.convert("RGBA")
+        if a < 0.999:
+            im.putalpha(int(255 * a))
+        fr.canvas.alpha_composite(im, (0, STAGE_Y))
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        d.text((W - 22, STAGE_Y + STAGE_H - 14), self.credit, font=font("medium", 20),
+               fill=(255, 255, 255, int(200 * a)), anchor="rb", stroke_width=2, stroke_fill=(0, 0, 0, int(160 * a)))
+        if self.caption:
+            ca = a * clamp((lt - 0.3) / 0.4)
+            f = font("serif", 40)
+            tw = text_w(self.caption, f)
+            y0 = STAGE_Y + STAGE_H - 96
+            d.rectangle([36, y0, 36 + tw + 44, y0 + 62], fill=(10, 12, 20, int(150 * ca)))
+            d.rectangle([36, y0, 43, y0 + 62], fill=with_alpha(PAL["gold"], ca))
+            d.text((62, y0 + 31), self.caption, font=f, fill=(255, 250, 235, int(255 * ca)), anchor="lm")
+        fr.comp(L)
+
+
+class FlowArrow(El):
+    """図解用のまっすぐな矢印（ステージ内座標）"""
+    sfx = None
+
+    def __init__(self, x0, y0, x1, y1, col=PAL["gold"], width=14, label=None, draw_dur=0.5, **kw):
+        super().__init__(**kw)
+        self.p0, self.p1, self.col, self.width, self.label, self.draw_dur = (x0, y0), (x1, y1), col, width, label, draw_dur
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        k = ease_out(lt / self.draw_dur)
+        x0, y0 = self.p0[0], STAGE_Y + self.p0[1]
+        x1 = x0 + (self.p1[0] - x0) * k
+        y1 = y0 + (STAGE_Y + self.p1[1] - y0) * k
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        d.line([(x0, y0), (x1, y1)], fill=with_alpha(PAL["white"], a), width=self.width + 8)
+        d.line([(x0, y0), (x1, y1)], fill=with_alpha(self.col, a), width=self.width)
+        ang = math.atan2(y1 - y0, x1 - x0)
+        hl, hw = self.width * 2.4, self.width * 1.8
+        tip = (x1 + math.cos(ang) * hl * 0.6, y1 + math.sin(ang) * hl * 0.6)
+        d.polygon([tip, (x1 + math.cos(ang + math.pi / 2) * hw, y1 + math.sin(ang + math.pi / 2) * hw),
+                   (x1 + math.cos(ang - math.pi / 2) * hw, y1 + math.sin(ang - math.pi / 2) * hw)],
+                  fill=with_alpha(self.col, a), outline=with_alpha(PAL["white"], a))
+        if self.label and k > 0.5:
+            _label(d, (x0 + x1) / 2, (y0 + y1) / 2 - 40, self.label, font("black", 36), self.col,
+                   a * clamp((k - 0.5) * 2), "mm", 6)
         fr.comp(L)
