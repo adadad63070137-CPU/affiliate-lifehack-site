@@ -22,3 +22,17 @@ for f in Sans/OTF/Japanese/NotoSansCJKjp-Black.otf Sans/OTF/Japanese/NotoSansCJK
 done
 curl -sSL -o land.geojson $RAW/nvkelso/natural-earth-vector/master/geojson/ne_10m_land.geojson
 echo "setup done"
+
+# 実写寄りの見た目（look="doc"）用：衛星画像と標高タイル
+mkdir -p "$AS/terrain/t7" && cd "$AS/terrain"
+curl -sSL -o bluemarble.jpg $RAW/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg
+python3 - <<'PY'
+import math
+def tx(lon, z): return int((lon + 180) / 360 * 2 ** z)
+def ty(lat, z):
+    r = math.radians(lat); return int((1 - math.log(math.tan(r) + 1 / math.cos(r)) / math.pi) / 2 * 2 ** z)
+open("tiles.txt", "w").write("\n".join(f"7/{x}/{y}" for x in range(tx(-12, 7), tx(80, 7) + 1)
+                                       for y in range(ty(58, 7), ty(7, 7) + 1)))
+PY
+cat tiles.txt | xargs -P 16 -I{} sh -c 'f=t7/$(echo {} | tr / _).png; [ -s $f ] || curl -sS -o $f https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{}.png'
+echo "terrain done"

@@ -150,21 +150,23 @@ class MapBase:
     LON0, LON1, LAT0, LAT1 = -12.0, 80.0, 7.0, 58.0
     PPD = 100  # base image: px per degree of longitude
 
-    def __init__(self):
-        path = os.path.join(CACHE, "mapbase_v2.png")
+    def __init__(self, style="parchment"):
+        name = {"parchment": "mapbase_v2.png", "terrain": "mapbase_terrain_v1.png"}[style]
+        path = os.path.join(CACHE, name)
         self.w = int((self.LON1 - self.LON0) * self.PPD)
         self.h = int((merc(self.LAT1) - merc(self.LAT0)) * self.PPD)
         if os.path.exists(path):
             self.img = Image.open(path).convert("RGB")
         else:
-            self.img = self._render()
+            self.img = self._render() if style == "parchment" else self._render_terrain()
             self.img.save(path)
         self._cache_key, self._cache_img = None, None
 
     def bxy(self, lon, lat, ss=1):
         return ((lon - self.LON0) * self.PPD * ss, (merc(self.LAT1) - merc(lat)) * self.PPD * ss)
 
-    def _render(self):
+    def _land_mask(self):
+        """Natural Earth の海岸線から陸地マスク（アンチエイリアス）と海岸線の座標を作る"""
         ss = 2
         mask = Image.new("L", (self.w * ss, self.h * ss), 0)
         md = ImageDraw.Draw(mask)
@@ -185,7 +187,11 @@ class MapBase:
                     pts = [self.bxy(lo, max(-80, min(80, la)), ss) for lo, la in ring]
                     md.polygon(pts, fill=0 if i else 255)
                     coast.append(pts)
-        mask_s = mask.resize((self.w, self.h), Image.LANCZOS)
+        return mask.resize((self.w, self.h), Image.LANCZOS), coast
+
+    def _render(self):
+        ss = 2
+        mask_s, coast = self._land_mask()
         # 海：沿岸ほど明るいグラデーション
         glow = mask_s.filter(ImageFilter.GaussianBlur(28))
         sea = Image.new("RGB", (self.w, self.h), PAL["sea"])
@@ -215,6 +221,82 @@ class MapBase:
             y = self.bxy(0, lat)[1]
             d.line([(0, y), (self.w, y)], fill=(160, 150, 125), width=1)
         return img
+
+    def _elevation(self):
+        """AWS Terrain Tiles（terrarium, z7）を貼り合わせ、このベース地図の座標に合わせた標高[m]を返す"""
+        z, ts = 7, 256
+        n = 2 ** z * ts
+        tdir = os.path.join(ASSETS, "terrain", "t7")
+        xs = sorted({int(f.split("_")[1]) for f in os.listdir(tdir)})
+        ys = sorted({int(f.split("_")[2][:-4]) for f in os.listdir(tdir)})
+        mosaic = np.zeros(((ys[-1] - ys[0] + 1) * ts, (xs[-1] - xs[0] + 1) * ts), np.float32)
+        for x in xs:
+            for y in ys:
+                a = np.asarray(Image.open(os.path.join(tdir, f"{z}_{x}_{y}.png")).convert("RGB")).astype(np.float32)
+                e = a[..., 0] * 256 + a[..., 1] + a[..., 2] / 256 - 32768
+                mosaic[(y - ys[0]) * ts:(y - ys[0] + 1) * ts, (x - xs[0]) * ts:(x - xs[0] + 1) * ts] = e
+        # ウェブメルカトルのピクセル座標とベース地図の座標は相似（同じメルカトル）なので、切り抜いて拡大するだけ
+        k = n / (360 * self.PPD)
+        X0 = (self.LON0 + 180) / 360 * n - xs[0] * ts
+        Y0 = n / 2 - merc(self.LAT1) * n / 360 - ys[0] * ts
+        box = (X0, Y0, X0 + self.w * k, Y0 + self.h * k)
+        return np.asarray(Image.fromarray(mosaic, mode="F").resize((self.w, self.h), Image.BILINEAR, box=box))
+
+    def _render_terrain(self):
+        """衛星写真風：Blue Marble の色 ＋ 標高の陰影 ＋ 海の深さ"""
+        mask_s, coast = self._land_mask()
+        land = np.asarray(mask_s).astype(np.float32)[..., None] / 255
+        elev = self._elevation()
+        # Blue Marble（正距円筒）→ このメルカトル座標へ
+        bm = Image.open(os.path.join(ASSETS, "terrain", "bluemarble.jpg")).convert("RGB")
+        bw, bh = bm.size
+        lons = self.LON0 + np.arange(self.w) / self.PPD
+        mercs = merc(self.LAT1) - np.arange(self.h) / self.PPD
+        lats = np.degrees(2 * np.arctan(np.exp(np.radians(mercs))) - np.pi / 2)
+        bx = np.clip((lons + 180) / 360 * bw, 0, bw - 1)
+        by = np.clip((90 - lats) / 180 * bh, 0, bh - 1)
+        bmc = np.asarray(bm.filter(ImageFilter.GaussianBlur(1.2))).astype(np.float32)
+        col = bmc[by.astype(int)][:, bx.astype(int)]
+        col = np.asarray(Image.fromarray(col.astype(np.uint8)).filter(ImageFilter.GaussianBlur(3))).astype(np.float32)
+        # 小さな島などで Blue Marble の海の色が混ざった所は、乾いた地中海性の陸の色に置き換える
+        blue = np.clip((col[..., 2:3] - col[..., 0:1] - 5) / 30, 0, 1)
+        dry = np.array([150, 138, 100], np.float32)
+        col = col + (dry - col) * blue
+        # 陸の色：少し彩度を上げ、高地は岩肌・雪に
+        g = col.mean(axis=2, keepdims=True)
+        col = g + (col - g) * 1.25
+        e = np.clip(elev, 0, None)[..., None]
+        rock = np.array([150, 132, 110], np.float32)
+        snow = np.array([238, 240, 245], np.float32)
+        col = col + (rock - col) * np.clip((e - 1200) / 1800, 0, 0.6)
+        col = col + (snow - col) * np.clip((e - 2600) / 900, 0, 0.85)
+        # 陰影（北西からの光）
+        dy, dx = np.gradient(np.clip(elev, 0, None) if True else elev)
+        cell = 111000 / self.PPD
+        exag = 6.0
+        slope = np.arctan(exag * np.hypot(dx, dy) / cell)
+        aspect = np.arctan2(-dx, dy)
+        az, alt = np.radians(315), np.radians(40)
+        shade = np.sin(alt) * np.cos(slope) + np.cos(alt) * np.sin(slope) * np.cos(az - aspect)
+        shade = np.clip(shade / np.sin(alt), 0.35, 1.35)[..., None]
+        land_rgb = np.clip(col * (0.25 + 0.75 * shade), 0, 255)
+        # 海：深さで色を変える（浅い所は明るい青緑）
+        depth = np.clip(-elev, 0, 5000)[..., None] / 5000
+        shallow = np.array([62, 130, 160], np.float32)
+        deep = np.array([12, 38, 78], np.float32)
+        sea = shallow + (deep - shallow) * np.sqrt(depth)
+        sea_shade = np.clip(1 + (np.clip(shade, 0.6, 1.2) - 1) * 0.25, 0.85, 1.1)
+        sea = sea * np.where(elev[..., None] < 0, sea_shade, 1.0)
+        img = land_rgb * land + sea * (1 - land)
+        out = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
+        # 海岸線をうっすら
+        line = Image.new("L", (self.w * 2, self.h * 2), 0)
+        ld = ImageDraw.Draw(line)
+        for pts in coast:
+            ld.line(pts + [pts[0]], fill=110, width=3)
+        line = line.resize((self.w, self.h), Image.LANCZOS)
+        out = Image.composite(Image.new("RGB", out.size, (235, 230, 210)), out, line)
+        return out
 
     def view(self, cam):
         """cam=(lon, lat, zoom[px/deg on screen]) → ステージ画像"""
@@ -357,6 +439,7 @@ class Scene:
 class El:
     """演出要素。at: 秒 or 'c1'(そのシーンの1番目の文の開始)。span: 何シーン残すか"""
     sfx = "pop"
+    layer = "fg"  # "bg" は背景扱い（映画風の質感がかかる）
 
     def __init__(self, at=0.0, span=1, fade=0.25, dur=None):
         self.at, self.span, self.fade, self.dur = at, span, fade, dur
@@ -387,16 +470,42 @@ class Frame:
         return self.v.map.to_screen(self.cam, lon, lat)
 
 
+# ---------------------------------------------------------------- film look
+class FilmLook:
+    """ステージ（地図・写真）部分だけにかける映画風の質感：色調・周辺減光・粒子"""
+
+    def __init__(self, seed=7):
+        yy, xx = np.mgrid[0:STAGE_H, 0:W].astype(np.float32)
+        r = np.hypot((xx - W / 2) / (W / 2), (yy - STAGE_H / 2) / (STAGE_H / 2))
+        self.vignette = (1 - 0.38 * np.clip(r - 0.45, 0, 1) ** 1.6)[..., None]
+        rng = np.random.default_rng(seed)
+        self.grain = [np.asarray(Image.fromarray(rng.normal(128, 40, (STAGE_H // 2, W // 2)).clip(0, 255)
+                                                 .astype(np.uint8)).resize((W, STAGE_H), Image.BILINEAR),
+                                 np.float32)[..., None] - 128 for _ in range(6)]
+        x = np.arange(256, dtype=np.float32) / 255
+        curve = x + 0.12 * np.sin((x - 0.5) * np.pi) * x * (1 - x) * 4 * 0.5  # 弱いS字
+        self.lut = np.stack([np.clip(curve * 255 * m + o, 0, 255) for m, o in ((1.03, 4), (1.0, 1), (0.94, -2))])
+
+    def apply(self, canvas, frame_no):
+        box = (0, STAGE_Y, W, STAGE_Y + STAGE_H)
+        a = np.asarray(canvas.crop(box).convert("RGB"))
+        g = np.stack([self.lut[c][a[..., c]] for c in range(3)], axis=-1)
+        g = g * self.vignette + self.grain[frame_no % len(self.grain)] * 0.09
+        canvas.paste(Image.fromarray(np.clip(g, 0, 255).astype(np.uint8)).convert("RGBA"), box[:2])
+
+
 # ---------------------------------------------------------------- video
 class Video:
     def __init__(self, scenes, *, header, badge, badge_color, credit, voice, speed,
-                 max_dur=59.0, timeline=None, pitch=0.0, intonation=1.15, gap=0.12):
+                 max_dur=59.0, timeline=None, pitch=0.0, intonation=1.15, gap=0.12, look="classic"):
         self.scenes = scenes
+        self.look = look  # "classic"：古地図風 / "doc"：実写寄り（衛星地図＋映画風の質感）
         self.header, self.badge, self.badge_color, self.credit = header, badge, badge_color, credit
         self.voice, self.speed, self.max_dur = voice, speed, max_dur
         self.pitch, self.intonation, self.gap = pitch, intonation, gap
         self.timeline = timeline
-        self.map = MapBase()
+        self.map = MapBase("terrain" if look == "doc" else "parchment")
+        self.film = FilmLook() if look == "doc" else None
 
     # ---- タイミング決定
     def build_audio(self, tts):
@@ -504,7 +613,13 @@ class Video:
     def draw_stage(self, fr, sc):
         if sc.stage == "map":
             fr.cam = self.cam_at(fr.t)
-            fr.canvas.paste(self.map.view(fr.cam), (0, STAGE_Y))
+            if fr.cam is None:  # 地図のカメラがまだ無い（写真だけの場面）
+                ImageDraw.Draw(fr.canvas).rectangle([0, STAGE_Y, W, STAGE_Y + STAGE_H], fill=(16, 18, 26))
+            else:
+                fr.canvas.paste(self.map.view(fr.cam), (0, STAGE_Y))
+        elif self.look == "doc":
+            fr.cam = self.cam_at(fr.t)
+            fr.canvas.paste(self._doc_plain(), (0, STAGE_Y))
         else:
             fr.cam = self.cam_at(fr.t)
             d = ImageDraw.Draw(fr.canvas)
@@ -516,6 +631,15 @@ class Video:
             L = fr.layer()
             ImageDraw.Draw(L).rectangle([0, STAGE_Y, W, STAGE_Y + STAGE_H], fill=with_alpha(PAL["dark"], dk))
             fr.comp(L)
+
+    def _doc_plain(self):
+        """実写寄りの見た目で使う、図解用の暗い背景（中央が少し明るい）"""
+        if getattr(self, "_plain_bg", None) is None:
+            yy, xx = np.mgrid[0:STAGE_H, 0:W].astype(np.float32)
+            r = np.hypot((xx - W / 2) / W, (yy - STAGE_H / 2) / STAGE_H)
+            base = np.array([44, 50, 64], np.float32) * (1.15 - 0.6 * r)[..., None]
+            self._plain_bg = Image.fromarray(np.clip(base, 0, 255).astype(np.uint8))
+        return self._plain_bg
 
     def draw_frame_border(self, fr):
         d = ImageDraw.Draw(fr.canvas)
@@ -590,11 +714,14 @@ class Video:
         fr.canvas = Image.new("RGBA", (W, H), (*PAL["bg"], 255))
         sc = self.scene_at(t)
         self.draw_stage(fr, sc)
-        for s in self.scenes:
-            for el in s.els:
-                if el.t0 <= t < el.t1:
+        active = [el for s in self.scenes for el in s.els if el.t0 <= t < el.t1]
+        for layer in ("bg", "fg"):
+            for el in active:
+                if el.layer == layer:
                     # 0秒目から出る要素は登場アニメーションを済ませた状態で描く
                     el.draw(fr, t - el.t0 + (3.0 if el.t0 <= 0.001 else 0.0))
+            if layer == "bg" and self.film:
+                self.film.apply(fr.canvas, int(t * FPS))
         self.draw_frame_border(fr)
         self.draw_header(fr)
         self.draw_subtitle(fr, sc)
@@ -637,4 +764,7 @@ class Video:
         for sc in self.scenes:
             for c in sc.chunks:
                 rows.append(f"{c.t0:5.1f}-{c.t1:5.1f}s  {plain(c.sub)}")
+        credits = sorted({el.credit for sc in self.scenes for el in sc.els if getattr(el, "credit", None)})
+        if credits:
+            rows += ["", "[画像クレジット]"] + credits
         return "\n".join(rows)

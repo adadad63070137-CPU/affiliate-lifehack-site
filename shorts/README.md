@@ -19,8 +19,8 @@
 | `output/europe_05_alexander_general.mp4` | 教養版 | 50.4秒 | VOICEVOX:春日部つむぎ |
 | `output/europe_06_rome_exam.mp4` | 受験版 | 44.1秒 | VOICEVOX:四国めたん |
 | `output/europe_06_rome_general.mp4` | 教養版 | 44.9秒 | VOICEVOX:春日部つむぎ |
-| `output/europe_07_punic_wars_exam.mp4` | 受験版 | 39.6秒 | VOICEVOX:四国めたん |
-| `output/europe_07_punic_wars_general.mp4` | 教養版 | 41.0秒 | VOICEVOX:春日部つむぎ |
+| `output/europe_07_punic_wars_exam.mp4` | 受験版 | 39.8秒 | VOICEVOX:四国めたん |
+| `output/europe_07_punic_wars_general.mp4` | 教養版 | 41.8秒 | VOICEVOX:春日部つむぎ |
 
 各 `*_timing.txt` にナレーション原稿とタイムコードがあります。
 
@@ -33,6 +33,16 @@
 2. 受験版は **3択**、下部は「コメントで予想してね！」
 3. 「40秒で総整理」などの前置きは入れず、2秒目から本題
 4. **次回予告の画面は入れない**。最後は答え合わせで終わり、ループで冒頭の問いに戻る（次回は答えの画面に小さく表示）
+
+## 実写寄りの見た目（#7〜、`look="doc"`）
+
+- **地図**：NASA Blue Marble（衛星画像）の色 ＋ AWS Terrain Tiles の標高から作った陰影・海の深さ
+- **実写素材**：`engine/assets.py` が取得時にライセンスを確認
+  - Wikimedia Commons：パブリックドメイン / CC0 / CC BY のみ（CC BY-SA・NC は使わない）。Wikimedia の案内に従い 1920px の縮小版を使う
+  - メトロポリタン美術館 Open Access：パブリックドメインの作品のみ
+  - 画面右下と説明欄にクレジットを入れる（`*_timing.txt` の末尾に一覧を出力）
+- **質感**：地図・写真の部分だけに色調補正・周辺減光・フィルムの粒子（字幕やカードはくっきりのまま）
+- 答えを先に見せてしまう画像（例：答えが「ゾウ」の回でゾウが描かれた絵）は本編に入れない
 
 ## 生成方法
 
@@ -186,6 +196,7 @@ VOICEVOX:四国めたん（受験版）／VOICEVOX:春日部つむぎ（教養�
 次回：#8 内乱の1世紀
 
 VOICEVOX:四国めたん（受験版）／VOICEVOX:春日部つむぎ（教養版）
-地図データ：Natural Earth
+画像：Wikimedia Commons（パブリックドメイン）／J.M.W.ターナー「吹雪：アルプスを越えるハンニバルとその軍勢」ほか
+地図データ：Natural Earth, NASA Blue Marble, AWS Terrain Tiles
 #世界史 #受験 #共通テスト #古代ローマ #世界史クイズ
 ```

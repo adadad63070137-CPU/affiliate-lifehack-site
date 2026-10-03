@@ -1,7 +1,7 @@
 """図解・地図アニメ用の演出要素"""
 import math
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 from .core import (El, PAL, STAGE_H, STAGE_Y, W, clamp, ease_back, ease_io, ease_out, font,
                    parse_markup, text_w, with_alpha)
@@ -735,14 +735,21 @@ class AnswerCard(El):
     """最後の答え合わせ（次回はここに小さく添える）"""
     sfx = "ding"
 
-    def __init__(self, answer, note=None, next_text=None, **kw):
+    def __init__(self, answer, note=None, next_text=None, on_photo=False, **kw):
         super().__init__(**kw)
-        self.answer, self.note, self.next_text = answer, note, next_text
+        self.answer, self.note, self.next_text, self.on_photo = answer, note, next_text, on_photo
 
     def draw(self, fr, lt):
         a = self.alpha(fr.t)
         L = fr.layer()
         d = ImageDraw.Draw(L)
+        if self.on_photo:  # 写真の上に重ねる：下から暗くして文字を読みやすく
+            for i in range(0, STAGE_H, 6):
+                v = clamp((i / STAGE_H - 0.25) / 0.5)
+                d.rectangle([0, STAGE_Y + i, W, STAGE_Y + i + 6], fill=(8, 10, 18, int(200 * v * a)))
+            self._draw_text(d, lt, a, (255, 250, 235), PAL["gold"], STAGE_H * 0.45)
+            fr.comp(L)
+            return
         d.rectangle([0, STAGE_Y, W, STAGE_Y + STAGE_H], fill=with_alpha((250, 243, 225), a))
         k = ease_back(lt / 0.4)
         d.text((W / 2, STAGE_Y + 190), "A.", font=font("black", 150), fill=with_alpha(PAL["teal"], a), anchor="mm",
@@ -757,6 +764,26 @@ class AnswerCard(El):
             for line in self.note.split("/"):
                 d.text((W / 2, y), line, font=font("bold", 48), fill=with_alpha(PAL["ink"], na), anchor="mm")
                 y += 66
+        self._draw_next(d, a)
+        fr.comp(L)
+
+    def _draw_text(self, d, lt, a, ink, accent, top):
+        y = STAGE_Y + top
+        d.text((W / 2, y), "A.", font=font("black", 110), fill=with_alpha(PAL["teal"], a), anchor="mm",
+               stroke_width=6, stroke_fill=with_alpha(PAL["white"], a))
+        s = clamp(ease_back(lt / 0.4), 0, 1.2)
+        d.text((W / 2, y + 150), self.answer, font=font("black", max(8, int(110 * s))), fill=with_alpha(accent, a),
+               anchor="mm", stroke_width=8, stroke_fill=(0, 0, 0, int(200 * a)))
+        if self.note:
+            na = a * clamp((lt - 0.3) / 0.3)
+            yy = y + 260
+            for line in self.note.split("/"):
+                d.text((W / 2, yy), line, font=font("bold", 44), fill=with_alpha(ink, na), anchor="mm",
+                       stroke_width=4, stroke_fill=(0, 0, 0, int(160 * na)))
+                yy += 60
+        self._draw_next(d, a)
+
+    def _draw_next(self, d, a):
         if self.next_text:
             f = font("black", 40)
             tw = text_w(self.next_text, f)
@@ -764,7 +791,6 @@ class AnswerCard(El):
             d.rounded_rectangle([W / 2 - tw / 2 - 36, y - 40, W / 2 + tw / 2 + 36, y + 40], radius=40,
                                 fill=with_alpha(PAL["ink"], a))
             d.text((W / 2, y), self.next_text, font=f, fill=with_alpha(PAL["white"], a), anchor="mm")
-        fr.comp(L)
 
 
 class Elephant(El):
@@ -805,4 +831,64 @@ class Elephant(El):
                             fill=with_alpha(PAL["red"], a), outline=ink, width=4)
         if self.label:
             _label(d, cx, cy + 150 * s, self.label, font("black", 46), PAL["ink"], a, "mm", 6)
+        fr.comp(L)
+
+
+class Photo(El):
+    """実写素材（ゆっくりズーム＆パン）。layer='bg' なので映画風の質感がかかる
+
+    mode='cover'：ステージ全体を埋める（風景・絵画）
+    mode='fit'：作品全体を見せ、余白はぼかした同じ画像で埋める（彫刻・硬貨など）
+    focus=(x, y)：寄っていく先（0〜1、画像内の位置）
+    """
+    sfx = None
+    layer = "bg"
+
+    def __init__(self, path, credit, mode="cover", zoom=(1.0, 1.15), focus=(0.5, 0.5), caption=None, **kw):
+        super().__init__(**kw)
+        self.src = Image.open(path).convert("RGB")
+        self.credit, self.mode, self.zoom, self.focus, self.caption = credit, mode, zoom, focus, caption
+        self._bg = None
+
+    def _cover(self, im, z, fx, fy, w, h):
+        iw, ih = im.size
+        s = max(w / iw, h / ih) * z
+        cw, ch = w / s, h / s
+        cx = min(max(fx * iw, cw / 2), iw - cw / 2)
+        cy = min(max(fy * ih, ch / 2), ih - ch / 2)
+        return im.resize((w, h), Image.BILINEAR, box=(cx - cw / 2, cy - ch / 2, cx + cw / 2, cy + ch / 2))
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        dur = max(0.1, self.t1 - self.t0)
+        k = ease_io(clamp(lt / dur))
+        z = self.zoom[0] + (self.zoom[1] - self.zoom[0]) * k
+        fx = 0.5 + (self.focus[0] - 0.5) * k
+        fy = 0.5 + (self.focus[1] - 0.5) * k
+        if self.mode == "cover":
+            im = self._cover(self.src, z, fx, fy, W, STAGE_H)
+        else:
+            if self._bg is None:
+                bg = self._cover(self.src, 1.0, 0.5, 0.5, W // 4, STAGE_H // 4).filter(ImageFilter.GaussianBlur(6))
+                self._bg = bg.resize((W, STAGE_H), Image.BILINEAR).point(lambda v: int(v * 0.45))
+            im = self._bg.copy()
+            iw, ih = self.src.size
+            s = min((W - 80) / iw, (STAGE_H - 80) / ih) * z
+            fg = self.src.resize((int(iw * s), int(ih * s)), Image.BILINEAR)
+            im.paste(fg, ((W - fg.width) // 2, (STAGE_H - fg.height) // 2))
+        im = im.convert("RGBA")
+        if a < 0.999:
+            im.putalpha(int(255 * a))
+        fr.canvas.alpha_composite(im, (0, STAGE_Y))
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        d.text((W - 24, STAGE_Y + STAGE_H - 16), self.credit, font=font("medium", 22),
+               fill=(255, 255, 255, int(210 * a)), anchor="rb", stroke_width=2, stroke_fill=(0, 0, 0, int(160 * a)))
+        if self.caption:
+            ca = a * clamp((lt - 0.3) / 0.4)
+            f = font("serif", 46)
+            tw = text_w(self.caption, f)
+            d.rectangle([40, STAGE_Y + 40, 40 + tw + 48, STAGE_Y + 112], fill=(10, 12, 20, int(150 * ca)))
+            d.rectangle([40, STAGE_Y + 40, 48, STAGE_Y + 112], fill=with_alpha(PAL["gold"], ca))
+            d.text((70, STAGE_Y + 76), self.caption, font=f, fill=(255, 250, 235, int(255 * ca)), anchor="lm")
         fr.comp(L)
