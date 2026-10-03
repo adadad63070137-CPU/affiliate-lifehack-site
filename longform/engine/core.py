@@ -587,7 +587,8 @@ class El:
 class FilmLook:
     """ステージ（地図・写真）部分だけにかける映画風の質感：色調・周辺減光・粒子（ショート #7 と同じ）"""
 
-    def __init__(self, seed=7):
+    def __init__(self, seed=7, grain=0.09, every=1):
+        self.amount, self.every = grain, every  # 粒子の強さ / 何フレームごとに模様を変えるか（大きいほどファイルが小さい）
         yy, xx = np.mgrid[0:STAGE_H, 0:W].astype(np.float32)
         r = np.hypot((xx - W / 2) / (W / 2), (yy - STAGE_H / 2) / (STAGE_H / 2))
         self.vignette = (1 - 0.34 * np.clip(r - 0.5, 0, 1) ** 1.6)[..., None]
@@ -603,7 +604,7 @@ class FilmLook:
         box = (0, STAGE_Y, W, STAGE_Y + STAGE_H)
         a = np.asarray(canvas.crop(box).convert("RGB"))
         g = np.stack([self.lut[c][a[..., c]] for c in range(3)], axis=-1)
-        g = g * self.vignette + self.grain[frame_no % len(self.grain)] * 0.09
+        g = g * self.vignette + self.grain[(frame_no // self.every) % len(self.grain)] * self.amount
         canvas.paste(Image.fromarray(np.clip(g, 0, 255).astype(np.uint8)).convert("RGBA"), box[:2])
 
 
@@ -651,7 +652,8 @@ def _render_segment(args):
 
 class Video:
     def __init__(self, scenes, *, header, credit, voice, speed, max_dur=600.0, timeline=None,
-                 pitch=0.0, intonation=1.15, gap=0.22, crf=20, music_vol=0.11, look="classic"):
+                 pitch=0.0, intonation=1.15, gap=0.22, crf=20, music_vol=0.11, look="classic",
+                 grain=(0.05, 6)):
         self.scenes = scenes
         self.header, self.credit = header, credit
         self.voice, self.speed, self.max_dur = voice, speed, max_dur
@@ -659,7 +661,8 @@ class Video:
         self.timeline, self.crf, self.music_vol = timeline, crf, music_vol
         self.look = look  # "classic"：古地図風 / "doc"：実写寄り（衛星写真風の地図＋写真＋映画風の質感）
         self.map = WorldMap(look)
-        self.film = FilmLook() if look == "doc" else None
+        # 粒子は毎フレーム変えるとファイルが数倍になるので、控えめにして数フレームごとに変える
+        self.film = FilmLook(grain=grain[0], every=grain[1]) if look == "doc" else None
         self._plain_bg = None
         self._add_chapter_banners()
 

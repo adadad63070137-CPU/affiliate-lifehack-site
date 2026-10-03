@@ -490,7 +490,7 @@ def scenes():
 
 def video():
     return Video(scenes(), header=HEADER, credit=CREDIT, voice=8, speed=1.08, max_dur=600.0, timeline=TIMELINE,
-                 look="doc")
+                 look="doc", crf=27)  # 写真・衛星地図は情報量が多いので、GitHub の100MB制限に収まる画質に
 
 
 # ---------------------------------------------------------------- サムネイル（1280x720）
