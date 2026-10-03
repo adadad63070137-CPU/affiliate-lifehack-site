@@ -36,8 +36,13 @@ class MapLabel(El):
         a = self.alpha(fr.t)
         x, y = fr.xy(self.lon, self.lat)
         L = fr.layer()
-        _label(ImageDraw.Draw(L), x, y, self.text, font("serif" if self.serif else "black", self.size),
-               self.col, a, anchor="mm", stroke=5)
+        d = ImageDraw.Draw(L)
+        f = font("serif" if self.serif else "black", self.size)
+        if sum(self.col) > 600:  # 明るい文字は暗い縁取りで（衛星写真風の地図用）
+            d.text((x, y), self.text, font=f, fill=with_alpha(self.col, a), anchor="mm", stroke_width=5,
+                   stroke_fill=(10, 14, 24, int(200 * a)))
+        else:
+            _label(d, x, y, self.text, f, self.col, a, anchor="mm", stroke=5)
         fr.comp(L)
 
 
