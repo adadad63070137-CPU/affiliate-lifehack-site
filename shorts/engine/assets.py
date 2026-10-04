@@ -67,6 +67,12 @@ def commons(title):
         d = _api("https://commons.wikimedia.org/w/api.php?" + q)
         page = list(d["query"]["pages"].values())[0]
         ii = page["imageinfo"][0]
+        # 元画像より大きい幅を頼むと縮小版が作られず、元画像の直接取得は断られやすい。標準の幅を順に下げて縮小版を探す
+        for w in (1280, 960, 640):
+            if "/thumb/" in ii.get("thumburl", ""):
+                break
+            q = re.sub(r"iiurlwidth=\d+", f"iiurlwidth={w}", q)
+            ii = list(_api("https://commons.wikimedia.org/w/api.php?" + q)["query"]["pages"].values())[0]["imageinfo"][0]
         m = ii["extmetadata"]
         lic = _plain(m.get("LicenseShortName", {}).get("value", ""))
         # Wikimedia の案内に従い、元画像ではなく標準サイズ（1920px）の縮小版を使う

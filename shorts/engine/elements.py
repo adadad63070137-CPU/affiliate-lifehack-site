@@ -705,10 +705,13 @@ class QuizHook(El):
                             fill=with_alpha(PAL["ink"], a))
         d.text((W / 2, y), self.kicker, font=fk, fill=with_alpha(PAL["gold"], a), anchor="mm")
         s = 1 + 0.04 * math.sin(lt * 5)
-        d.text((W / 2, STAGE_Y + 215), "Q.", font=font("black", int(150 * s)), fill=with_alpha(PAL["red"], a),
+        # 問題文と選択肢が多いときは詰めて配置する
+        compact = len(self.question) + len(self.options) > 5
+        qs, fs, lh, oh, og, top = (130, 70, 92, 84, 100, 290) if compact else (150, 80, 108, 92, 112, 320)
+        d.text((W / 2, STAGE_Y + top - 100), "Q.", font=font("black", int(qs * s)), fill=with_alpha(PAL["red"], a),
                anchor="mm", stroke_width=8, stroke_fill=with_alpha(PAL["white"], a))
-        fq = font("black", 80)
-        y = STAGE_Y + 320
+        fq = font("black", fs)
+        y = STAGE_Y + top
         for line in self.question:
             segs = parse_markup(line)
             lw = sum(text_w(t, fq) for t, _ in segs)
@@ -717,15 +720,15 @@ class QuizHook(El):
                 d.text((x, y), t, font=fq, fill=with_alpha(PAL["red"] if em else PAL["ink"], a),
                        stroke_width=6, stroke_fill=with_alpha(PAL["white"], a))
                 x += text_w(t, fq)
-            y += 108
-        y += 20
-        fo = font("black", 52)
+            y += lh
+        y += 16 if compact else 20
+        fo = font("black", 48 if compact else 52)
         for i, opt in enumerate(self.options):
-            d.rounded_rectangle([110, y, W - 110, y + 92], radius=24, fill=with_alpha(PAL["white"], a),
+            d.rounded_rectangle([110, y, W - 110, y + oh], radius=24, fill=with_alpha(PAL["white"], a),
                                 outline=with_alpha(PAL["ink"], a), width=5)
-            d.text((150, y + 46), "①②③④"[i], font=fo, fill=with_alpha(PAL["red"], a), anchor="lm")
-            d.text((225, y + 46), opt, font=fo, fill=with_alpha(PAL["ink"], a), anchor="lm")
-            y += 112
+            d.text((150, y + oh / 2), "①②③④"[i], font=fo, fill=with_alpha(PAL["red"], a), anchor="lm")
+            d.text((225, y + oh / 2), opt, font=fo, fill=with_alpha(PAL["ink"], a), anchor="lm")
+            y += og
         d.text((W / 2, STAGE_Y + STAGE_H - 55), "答えは最後に！", font=font("black", int(48 * (1 + 0.05 * math.sin(lt * 5)))),
                fill=with_alpha(PAL["red"], a), anchor="mm")
         fr.comp(L)
