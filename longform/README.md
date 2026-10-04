@@ -3,6 +3,15 @@
 ショート（`shorts/`）と同じ仕組み（VOICEVOX＋Natural Earth の地図＋Pillow 描画＋ffmpeg）を、
 **横型 1920×1080 / 30fps・5〜10分**の長編向けに作り直したものです。
 
+## ダウンロード（クリックで保存）
+
+GitHub にログインした状態で、下のリンクを押すとそのまま保存されます。
+
+| 回 | 動画（1080p） | サムネイル | 説明欄用テキスト |
+|---|---|---|---|
+| 長編 #2 ポエニ戦争〜帝政の始まり | [動画をダウンロード](https://github.com/adadad63070137-cpu/affiliate-lifehack-site/raw/claude/gracious-newton-8fu97b/longform/output/europe_long02_rome_republic_to_empire.mp4) | [画像](https://github.com/adadad63070137-cpu/affiliate-lifehack-site/raw/claude/gracious-newton-8fu97b/longform/output/europe_long02_rome_republic_to_empire_thumbnail.png) | このページ下の「投稿用テキスト（長編 #2）」 |
+| 長編 #1 古代ギリシア〜ローマの誕生 | [動画をダウンロード](https://github.com/adadad63070137-cpu/affiliate-lifehack-site/raw/claude/gracious-newton-8fu97b/longform/output/europe_long01_greece_rome.mp4) | [画像](https://github.com/adadad63070137-cpu/affiliate-lifehack-site/raw/claude/gracious-newton-8fu97b/longform/output/europe_long01_greece_rome_thumbnail.png) | このページ下の「投稿用テキスト（長編 #1）」 |
+
 ## 出力済み
 
 | ファイル | 内容 | 尺 | ナレーション |
