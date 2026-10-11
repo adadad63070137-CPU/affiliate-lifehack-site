@@ -28,6 +28,10 @@ PHOTOS = [
      "ローレンス・アルマ＝タデマ『アントニウスとクレオパトラの出会い』"),
     ("ACTIUM", "Castro Battle of Actium.jpg", "ローレイス・ア・カストロ『アクティウムの海戦』"),
     ("AUGUSTUS", "Statue-Augustus.jpg", "アウグストゥス像（プリマ・ポルタのアウグストゥス）"),
+    ("SPARTACUS2", "Spartacus, Denis Foyatier, 1830 (18024747306).jpg", "ドニ・フォワイアティエ『スパルタクス』"),
+    ("SPARTACUS_DEATH", "Tod des Spartacus by Hermann Vogel.jpg", "ヘルマン・フォーゲル『スパルタクスの死』"),
+    ("CRASSUS", "Roman Marble Statue Head of Crassus, Louvre (28027339230).jpg", "クラッススの頭部像（ルーヴル美術館）"),
+    ("APPIA", "Appia antica 2-7-05 048.jpg", "アッピア街道（ローマ郊外）"),
 ]
 
 
