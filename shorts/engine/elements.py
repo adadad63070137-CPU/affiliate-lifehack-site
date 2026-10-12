@@ -895,3 +895,43 @@ class Photo(El):
             d.rectangle([40, STAGE_Y + 40, 48, STAGE_Y + 112], fill=with_alpha(PAL["gold"], ca))
             d.text((70, STAGE_Y + 76), self.caption, font=f, fill=(255, 250, 235, int(255 * ca)), anchor="lm")
         fr.comp(L)
+
+
+MONTHS = [("1月", "January"), ("2月", "February"), ("3月", "March"), ("4月", "April"), ("5月", "May"),
+          ("6月", "June"), ("7月", "July"), ("8月", "August"), ("9月", "September"), ("10月", "October"),
+          ("11月", "November"), ("12月", "December")]
+
+
+class MonthGrid(El):
+    """12か月の英語名の一覧。marks={月の添字: 下に出す小さい注記} で強調する"""
+
+    def __init__(self, marks=None, top=90, **kw):
+        super().__init__(**kw)
+        self.marks, self.top = marks or {}, top
+
+    def draw(self, fr, lt):
+        a = self.alpha(fr.t)
+        L = fr.layer()
+        d = ImageDraw.Draw(L)
+        tw, th, gx, gy = 300, 178, 30, 26
+        x0 = (W - (3 * tw + 2 * gx)) / 2
+        for i, (jp, en) in enumerate(MONTHS):
+            k = ease_back((lt - i * 0.04) / 0.3)
+            if k <= 0:
+                continue
+            r, c = divmod(i, 3)
+            x, y = x0 + c * (tw + gx), STAGE_Y + self.top + r * (th + gy) + (1 - clamp(k)) * 20
+            hl = i in self.marks
+            pulse = 0.5 + 0.5 * math.sin(lt * 5) if hl else 0
+            d.rounded_rectangle([x, y, x + tw, y + th], radius=18,
+                                fill=with_alpha(PAL["white"] if hl else (60, 66, 82), a * clamp(k)),
+                                outline=with_alpha(PAL["gold"] if hl else (90, 98, 118), a * clamp(k)),
+                                width=8 if hl else 3)
+            d.text((x + tw / 2, y + 44), jp, font=font("black", 40),
+                   fill=with_alpha(PAL["ink"] if hl else (200, 205, 215), a * clamp(k)), anchor="mm")
+            d.text((x + tw / 2, y + 100), en, font=font("black", 46 if len(en) < 9 else 38),
+                   fill=with_alpha(PAL["red"] if hl else PAL["white"], a * clamp(k)), anchor="mm")
+            if hl:
+                d.text((x + tw / 2, y + 148), self.marks[i], font=font("black", 32),
+                       fill=with_alpha(PAL["teal"], a * (0.7 + 0.3 * pulse)), anchor="mm")
+        fr.comp(L)

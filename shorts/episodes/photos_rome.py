@@ -32,6 +32,9 @@ PHOTOS = [
     ("SPARTACUS_DEATH", "Tod des Spartacus by Hermann Vogel.jpg", "ヘルマン・フォーゲル『スパルタクスの死』"),
     ("CRASSUS", "Roman Marble Statue Head of Crassus, Louvre (28027339230).jpg", "クラッススの頭部像（ルーヴル美術館）"),
     ("APPIA", "Appia antica 2-7-05 048.jpg", "アッピア街道（ローマ郊外）"),
+    ("FASTI", "Fasti annales, calendario numano, pannello maggiore dei Fasti Antiates, 84-55 a.C. Palazzo Massimo alle Terme -FG1.jpg",
+     "ユリウス暦以前のローマの暦（ファスティ・アンティアテス、前84〜前55年）"),
+    ("GREGORY", "Lavinia Fontana - Portrait of Pope Gregory XIII.jpg", "ラウィニア・フォンターナ『教皇グレゴリウス13世の肖像』"),
 ]
 
 
