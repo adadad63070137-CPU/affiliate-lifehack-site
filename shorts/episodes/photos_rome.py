@@ -35,6 +35,9 @@ PHOTOS = [
     ("FASTI", "Fasti annales, calendario numano, pannello maggiore dei Fasti Antiates, 84-55 a.C. Palazzo Massimo alle Terme -FG1.jpg",
      "ユリウス暦以前のローマの暦（ファスティ・アンティアテス、前84〜前55年）"),
     ("GREGORY", "Lavinia Fontana - Portrait of Pope Gregory XIII.jpg", "ラウィニア・フォンターナ『教皇グレゴリウス13世の肖像』"),
+    ("EIDMAR", "Coin of Brutus.jpg", "ブルートゥスの「3月15日」銀貨（EID MAR）"),
+    ("BRUTUS", "Buste van Marcus Junius Brutus, RP-P-OB-33.056.jpg", "マルクス・ブルートゥスの胸像（版画、アムステルダム国立美術館）"),
+    ("SHAKESPEARE", "Shakespeare.jpg", "シェイクスピアの肖像（チャンドス・ポートレート）"),
 ]
 
 
