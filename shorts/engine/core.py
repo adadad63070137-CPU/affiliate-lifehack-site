@@ -696,7 +696,7 @@ class Video:
         for a, b, name, col, lab in tl["eras"]:
             d.text((X(lab), y0 + 62), name, font=fs, fill=PAL["ink"], anchor="mt")
         for yr in tl["ticks"]:
-            d.text((X(yr), y0 + 22), f"前{-yr}", font=font("medium", 22), fill=PAL["dim"], anchor="mb")
+            d.text((X(yr), y0 + 22), f"前{-yr}" if yr < 0 else f"{yr}年", font=font("medium", 22), fill=PAL["dim"], anchor="mb")
         # 現在地ポインタ
         yr_now, prev = None, None
         for sc in self.scenes:

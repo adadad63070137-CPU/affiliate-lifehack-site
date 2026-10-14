@@ -38,6 +38,8 @@ PHOTOS = [
     ("EIDMAR", "Coin of Brutus.jpg", "ブルートゥスの「3月15日」銀貨（EID MAR）"),
     ("BRUTUS", "Buste van Marcus Junius Brutus, RP-P-OB-33.056.jpg", "マルクス・ブルートゥスの胸像（版画、アムステルダム国立美術館）"),
     ("SHAKESPEARE", "Shakespeare.jpg", "シェイクスピアの肖像（チャンドス・ポートレート）"),
+    ("PONTDUGARD", "Pont du Gard 004.jpg", "ポン・デュ・ガール（ローマの水道橋、フランス）"),
+    ("FORUM", "Roman Forum (25854190723).jpg", "フォロ・ロマーノ（古代ローマの中心広場）"),
 ]
 
 
